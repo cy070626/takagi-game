@@ -1,0 +1,14 @@
+.scene[data-depth=on]{transform:perspective(1100px) rotateX(var(--depth-x,0deg)) rotateY(var(--depth-y,0deg));transition:transform .2s ease-out,box-shadow .25s;box-shadow:0 18px 42px #25352930,0 2px 5px #25352920;isolation:isolate}
+.scene[data-depth=on] .speech{box-shadow:0 10px 24px #172f3229;border:1px solid #ffffff80}
+.scene[data-depth=on] .caption{filter:drop-shadow(0 2px 7px #0005)}
+.scene[data-depth=on]::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:inherit;box-shadow:inset 1px 1px 0 #ffffff70,inset -1px -1px 0 #ffffff25;background:linear-gradient(120deg,#ffffff10,transparent 40%,#152d3812)}
+.depth-toggle,.conversation-tools button,.reply-complete{padding:7px 11px;border:1px solid #cbd8c4;background:#fcfdf8;border-radius:18px;color:#496047;cursor:pointer;font-size:13px;min-height:34px}
+.depth-toggle[aria-pressed=true]{background:#e5eddd}
+.depth-note,.conversation-trail{display:block;font-size:12px;color:#6a795f;line-height:1.6;margin:8px 0}
+.conversation-tools{display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px}
+.conversation-history p{white-space:pre-wrap;line-height:1.75;margin:5px 0 18px}.conversation-history strong{font-size:13px;color:#6a795f}
+.reply-complete{margin:6px 0 0 8px;font-size:12px}
+button:active:not(:disabled){filter:brightness(.95)}
+.chat-scroll{overflow-anchor:auto}.message p{white-space:pre-wrap}
+@media(prefers-reduced-motion:reduce){.scene[data-depth=on]{transform:none!important}}
+@media(max-width:700px){.conversation-tools{justify-content:flex-start}.depth-note{font-size:12px}.scene[data-depth=on]{box-shadow:0 10px 24px #25352922}}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17221d">
+  <title>高木同学 · 音乐小剧场</title>
+  <link rel="stylesheet" href="../css/music-theater.css">
+</head>
+<body>
+  <main class="theater" id="theater" data-scene="sunset-classroom" data-fit="complete">
+    <div class="scene-layer scene-current" id="scene-current"></div>
+    <div class="scene-layer scene-next" id="scene-next"></div>
+    <div class="scene-shade"></div>
+    <div class="scene-effects" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <header class="theater-bar">
+      <div class="theater-brand">
+        <small>高木同学</small>
+        <strong>音乐小剧场</strong>
+        <span>Music Theater</span>
+      </div>
+      <div class="theater-actions">
+        <button id="supplement-open" type="button">补充歌单</button>
+        <button id="fit-toggle" type="button">画面：完整</button>
+        <button id="effects-toggle" type="button" aria-pressed="true">光影：开</button>
+        <button id="minimize" type="button">收起</button>
+      </div>
+    </header>
+
+    <section class="scene-copy" aria-live="polite">
+      <span id="scene-number">01 / 09</span>
+      <h1 id="scene-title">夕阳教室</h1>
+      <p id="scene-subtitle">放学后的温柔时光</p>
+      <blockquote id="scene-line">放学后的光，好像总会慢一点。</blockquote>
+      <small id="scene-jp">もう少しだけ、ここにいよう。</small>
+      <div id="scene-tags" class="scene-tags"></div>
+    </section>
+
+    <button class="player-peek" id="player-peek" type="button" hidden>
+      <span>♫</span><b id="peek-title">言わないけどね。</b><small>展开播放器</small>
+    </button>
+
+    <aside class="player-panel" id="player-panel">
+      <div class="player-heading">
+        <div><small>当前场景歌单</small><h2 id="track-title">言わないけどね。</h2><p id="track-artist">大原ゆい子</p></div>
+        <button id="collapse-player" type="button" aria-label="收起播放器">⌄</button>
+      </div>
+      <div class="player-frame" id="player-frame"></div>
+      <div class="track-list" id="track-list" aria-label="场景歌曲"></div>
+      <div class="player-controls">
+        <a id="open-spotify" target="_blank" rel="noopener noreferrer">在 Spotify 打开</a>
+        <button id="import-local" type="button">导入本地音乐</button>
+        <button id="stop-close" type="button">停止并退出</button>
+        <input id="local-file" type="file" accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav,.mp3,.m4a,.ogg,.wav" hidden>
+      </div>
+      <audio id="local-player" controls hidden></audio>
+      <p class="player-note" id="player-note">Spotify 音量请在播放器或设备中调节。本地音乐不会上传。</p>
+    </aside>
+
+    <nav class="scene-rail" id="scene-rail" aria-label="选择音乐场景"></nav>
+  </main>
+
+  <dialog class="supplement-dialog" id="supplement-dialog" aria-labelledby="supplement-title">
+    <section class="supplement-shell">
+      <header class="supplement-head">
+        <div>
+          <small>MY MUSIC SHELF</small>
+          <h2 id="supplement-title">补充歌单</h2>
+          <p>原有收藏与未收入九情境的歌曲都保留在这里。带“可播放”的歌曲可直接展开官方播放器。</p>
+        </div>
+        <button id="supplement-close" type="button" aria-label="关闭补充歌单">×</button>
+      </header>
+      <div class="supplement-tabs" id="supplement-tabs" role="tablist" aria-label="筛选补充歌单"></div>
+      <div class="supplement-layout">
+        <div class="supplement-list" id="supplement-list"></div>
+        <aside class="supplement-player" id="supplement-player">
+          <div class="supplement-empty">
+            <span>♫</span>
+            <strong>从左侧选择一首歌</strong>
+            <p>优先使用 Spotify 官方播放器。完整播放权限取决于地区与 Spotify 账户。</p>
+          </div>
+        </aside>
+      </div>
+      <footer class="supplement-foot">
+        <p>Spotify 未提供可确认嵌入地址的歌曲会打开官方搜索页。页面不会接入来源不明的音频。</p>
+      </footer>
+    </section>
+  </dialog>
+  <script src="../js/music-theater.js"></script>
+</body>
+</html>
