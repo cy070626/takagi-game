@@ -39,3 +39,12 @@ test("Netlify 聊天路由和入口文件存在", () => {
   const redirects = readFileSync(join(root, "_redirects"), "utf8");
   assert.match(redirects, /^\/api\/chat\s+\/\.netlify\/functions\/chat\s+200/m);
 });
+
+test("橡皮对决使用低重绘动画路径", () => {
+  const source = readFileSync(join(root, "games", "eraser-duel.html"), "utf8");
+  assert.match(source, /FRAME_MS=1000\/30/);
+  assert.match(source, /translate3d\(/);
+  assert.doesNotMatch(source, /getBoundingClientRect\(/);
+  assert.doesNotMatch(source, /backdrop-filter\s*:/);
+  assert.doesNotMatch(source, /data:image\/png;base64/);
+});
