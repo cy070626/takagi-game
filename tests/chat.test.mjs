@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import handler from "../netlify/functions/chat.js";
 
+process.env.QWEN_API_KEY = "test-qwen-api-key";
+
 function request(body) {
   return new Request("https://example.netlify.app/.netlify/functions/chat", {
     method: "POST",
@@ -43,6 +45,7 @@ test("正确密码才调用 DeepSeek，并传入短期上下文", async () => {
   const response = await handler(request({
     message: "还记得上一句吗？",
     password: "configured-secret",
+    modelPreference: "deepseek-flash",
     history: [{ role: "user", text: "上一句" }, { role: "assistant", text: "记得" }],
     profile: { chatStyle: "playful", currentMood: "happy", address: "重影" },
   }));
@@ -60,6 +63,70 @@ test("正确密码才调用 DeepSeek，并传入短期上下文", async () => {
     { role: "user", content: "上一句" },
     { role: "assistant", content: "记得" },
   ]);
+});
+
+test("默认调用千问 3.8 Max，并开启联网搜索和统一提示词", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "test-qwen-api-key";
+  let calledUrl;
+  let outbound;
+  globalThis.fetch = async (url, options) => {
+    calledUrl = url;
+    outbound = JSON.parse(options.body);
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ text: "今天风有点大，记得把外套拉好。" }) } }] });
+  };
+
+  const response = await handler(request({
+    message: "今天天气怎么样？",
+    password: "configured-secret",
+    profile: { location: "上海", chatStyle: "gentle", currentMood: "calm" },
+  }));
+  const reply = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(calledUrl, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
+  assert.equal(outbound.model, "qwen3.8-max");
+  assert.equal(outbound.enable_search, true);
+  assert.match(outbound.messages[0].content, /今天天气如何/);
+  assert.match(outbound.messages[0].content, /参考原作中高木/);
+  assert.equal(reply.engineName, "千问 3.8 Max");
+  assert.equal(reply.webSearchEnabled, true);
+});
+
+test("三个新增在线引擎都使用各自模型与同一份系统提示词", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "test-qwen-api-key";
+  process.env.DEEPSEEK_API_KEY = "test-deepseek-api-key";
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, body: JSON.parse(options.body) });
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ text: "我在听。" }) } }] });
+  };
+
+  for (const modelPreference of ["qwen-flash", "deepseek-pro"]) {
+    const response = await handler(request({ message: "继续聊", password: "configured-secret", modelPreference }));
+    assert.equal(response.status, 200);
+  }
+
+  assert.equal(calls[0].body.model, "qwen3.8-flash");
+  assert.equal(calls[0].body.enable_search, true);
+  assert.equal(calls[1].body.model, "deepseek-v4-pro-0813");
+  assert.equal(calls[1].body.enable_search, undefined);
+  assert.equal(calls[0].body.messages[0].content, calls[1].body.messages[0].content);
+});
+
+test("上游 Key 失效时返回具体原因和更换引擎提醒", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "invalid-key";
+  globalThis.fetch = async () => Response.json({ error: { message: "invalid api key" } }, { status: 401 });
+
+  const response = await handler(request({ message: "你好", password: "configured-secret", modelPreference: "qwen-max" }));
+  const failure = await response.json();
+
+  assert.equal(response.status, 502);
+  assert.equal(failure.code, "ENGINE_KEY_INVALID");
+  assert.match(failure.error, /千问 3\.8 Max Key 无效/);
+  assert.match(failure.reminder, /更换其他引擎/);
 });
 
 test("未提供语气参数时使用轻松同桌和平静", async () => {

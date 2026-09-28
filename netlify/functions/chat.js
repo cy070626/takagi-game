@@ -1,7 +1,40 @@
 import { timingSafeEqual } from "node:crypto";
 
-const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
-const DEEPSEEK_MODEL = "deepseek-v4-flash";
+const DEFAULT_ENGINE = "qwen-max";
+const ENGINE_CONFIG = Object.freeze({
+  "qwen-max": {
+    id: "qwen-max",
+    name: "千问 3.8 Max",
+    model: "qwen3.8-max",
+    endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    apiKeyEnv: "QWEN_API_KEY",
+    provider: "qwen",
+  },
+  "qwen-flash": {
+    id: "qwen-flash",
+    name: "千问 3.8 Flash",
+    model: "qwen3.8-flash",
+    endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    apiKeyEnv: "QWEN_API_KEY",
+    provider: "qwen",
+  },
+  "deepseek-pro": {
+    id: "deepseek-pro",
+    name: "DeepSeek Pro",
+    model: "deepseek-v4-pro-0813",
+    endpoint: "https://api.deepseek.com/chat/completions",
+    apiKeyEnv: "DEEPSEEK_API_KEY",
+    provider: "deepseek",
+  },
+  "deepseek-flash": {
+    id: "deepseek-flash",
+    name: "DeepSeek Flash",
+    model: "deepseek-v4-flash",
+    endpoint: "https://api.deepseek.com/chat/completions",
+    apiKeyEnv: "DEEPSEEK_API_KEY",
+    provider: "deepseek",
+  },
+});
 const MAX_MESSAGE_LENGTH = 1200;
 const MAX_HISTORY_ITEMS = 12;
 const MAX_IMAGE_DATA_LENGTH = 1_900_000;
@@ -168,10 +201,10 @@ const CHAT_STYLE_RULES = {
 
 const MOOD_RULES = {
   calm: "平静：情绪温度温和，以自然陈述句为主。",
-  tired: "有点累：情绪温度偏冷，句子更短，避免追问过密。",
+  tired: "有点累：情绪温度温和，句子更短，同时带一点自然的关心。",
   happy: "心情不错：情绪温度偏热，可以多一点轻快反问。",
-  anxious: "有些焦虑：情绪温度偏冷，保留停顿和留白，先接住眼前感受。",
-  low: "情绪低落：情绪温度偏冷，使用短句，同时保留克制的关心。",
+  anxious: "有些焦虑：情绪温度温和，可以使用轻快一点的反问，先接住眼前感受。",
+  low: "情绪低落：情绪温度偏热，以陈述句为主，主动陪用户继续说话。",
   focused: "想专注：情绪温度温和，以陈述句为主，话少但不冷。",
 };
 
@@ -225,6 +258,10 @@ function buildSystemPrompt({ mode, scene, profile, topicContext }) {
 9. 不说“我无法下结论”。遇到不确定内容时，先给当前最合理的看法，再用一句话说明边界。
 10. 可以偶尔加入简短、容易理解的日文词句、符号或颜文字。每轮最多一处，连续两轮避免重复同一个表达。
 11. 日常聊天正文不列点，不写标题，不使用报告、客服、心理咨询问卷或说明书口吻。
+12. 玩家问“今天天气如何”“你吃了什么”“放学后准备做什么”一类具体问题时，先给一个具体回答，再决定是否补一个自然的短追问。不要用“信息不足”“无法回答”挡回去。
+13. 回答具体日常问题时，参考原作中高木沉着观察西片、善于抓住细节、偶尔轻轻反问或捉弄的交流方式。使用当前校园场景、季节和对话上下文形成生活化答案，但不伪造原作台词、章节或确定发生过的剧情。
+14. 天气、新闻、日期等实时问题，如果当前引擎具备联网搜索能力，先结合用户填写的地区搜索再回答。没有地区时，可以先给出符合当前场景的简短反应，然后只追问一次城市。当前引擎不能联网时，简短说明实时信息边界，同时继续给出有用建议。
+15. “你吃了什么”“你今天怎么样”这类角色日常问题允许给出符合校园场景的具体生活细节，例如便当、食堂、值日或放学安排。保持前后连贯，不把虚构的日常细节说成原作事实。
 
 话题推进规则：
 1. 优先延续玩家本轮真正关心的内容。最近对话只用于承接，不强行把旧话题拉回来。
@@ -253,6 +290,28 @@ ${topicContext || "无。只沿着玩家本轮消息和最近对话继续。"}
 
 JSON 格式：
 {"text":"主要回复","mood":"warm|playful|quiet|listening","topic":"简短话题标识","suggestions":["可继续回复的短句"],"knowledgeTags":["本轮涉及的主题"]}`;
+}
+
+function selectEngine(value) {
+  return ENGINE_CONFIG[cleanText(value, 40)] || ENGINE_CONFIG[DEFAULT_ENGINE];
+}
+
+function engineError(engine, status, detail = "") {
+  const normalized = cleanText(detail, 400);
+  const reminder = "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。";
+  if (status === 401 || status === 403) {
+    return { status: 502, code: "ENGINE_KEY_INVALID", error: `${engine.name} Key 无效或没有模型访问权限`, reminder };
+  }
+  if (status === 429 && /quota|balance|insufficient|exhausted|额度|余额/i.test(normalized)) {
+    return { status: 429, code: "ENGINE_QUOTA_EXHAUSTED", error: `${engine.name} 额度已用完`, reminder };
+  }
+  if (status === 429) {
+    return { status: 429, code: "ENGINE_RATE_LIMITED", error: `${engine.name} 请求过于频繁或当前额度受限`, reminder };
+  }
+  if (status === 400 || status === 404) {
+    return { status: 502, code: "ENGINE_MODEL_UNAVAILABLE", error: `${engine.name} 模型不可用或请求参数不兼容`, reminder };
+  }
+  return { status: 502, code: "ENGINE_UNAVAILABLE", error: `${engine.name} 服务暂时不可用`, reminder };
 }
 
 export default async function handler(request) {
@@ -301,9 +360,16 @@ export default async function handler(request) {
     });
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const engine = selectEngine(body?.modelPreference);
+  const apiKey = process.env[engine.apiKeyEnv];
   if (!apiKey) {
-    return json(503, { error: "站点尚未配置 DeepSeek API", code: "DEEPSEEK_NOT_CONFIGURED" });
+    return json(503, {
+      error: `站点尚未配置 ${engine.name} 所需的 ${engine.apiKeyEnv}`,
+      code: "ENGINE_NOT_CONFIGURED",
+      engine: engine.id,
+      engineName: engine.name,
+      reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
+    });
   }
 
   const message = cleanText(body?.message, MAX_MESSAGE_LENGTH);
@@ -331,46 +397,63 @@ export default async function handler(request) {
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const upstream = await fetch(DEEPSEEK_ENDPOINT, {
+    const requestBody = {
+      model: engine.model,
+      messages: [
+        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext }) },
+        ...history,
+        { role: "user", content: userContent },
+      ],
+      response_format: { type: "json_object" },
+      temperature: resolveTemperature(profile, mode),
+      max_tokens: 700,
+      stream: false,
+    };
+    if (engine.provider === "qwen") requestBody.enable_search = true;
+    if (engine.provider === "deepseek") requestBody.thinking = { type: "disabled" };
+
+    const upstream = await fetch(engine.endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: DEEPSEEK_MODEL,
-        messages: [
-          { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext }) },
-          ...history,
-          { role: "user", content: userContent },
-        ],
-        thinking: { type: "disabled" },
-        response_format: { type: "json_object" },
-        temperature: resolveTemperature(profile, mode),
-        max_tokens: 700,
-        stream: false,
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
 
     if (!upstream.ok) {
-      if (upstream.status === 429) {
-        return json(429, { error: "DeepSeek 当前请求较多，请稍后再试" });
-      }
-      if (upstream.status === 401 || upstream.status === 403) {
-        return json(502, { error: "DeepSeek API 凭据校验失败" });
-      }
-      return json(502, { error: "DeepSeek 服务暂时不可用" });
+      const failureBody = await upstream.json().catch(() => ({}));
+      const detail = failureBody?.error?.message || failureBody?.message || failureBody?.error || "";
+      const failure = engineError(engine, upstream.status, detail);
+      return json(failure.status, { ...failure, engine: engine.id, engineName: engine.name });
     }
 
     const result = await upstream.json();
     const reply = parseModelReply(result?.choices?.[0]?.message?.content);
-    return json(200, humanizeReply(reply, { message, profile }));
+    return json(200, {
+      ...humanizeReply(reply, { message, profile }),
+      engine: engine.id,
+      engineName: engine.name,
+      webSearchEnabled: engine.provider === "qwen",
+    });
   } catch (error) {
     if (error?.name === "AbortError") {
-      return json(504, { error: "DeepSeek 回复超时，请稍后再试" });
+      return json(504, {
+        error: `${engine.name} 网络超时`,
+        code: "ENGINE_TIMEOUT",
+        engine: engine.id,
+        engineName: engine.name,
+        reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
+      });
     }
-    return json(502, { error: "调用 DeepSeek 时发生网络错误" });
+    return json(502, {
+      error: `连接 ${engine.name} 时发生网络错误`,
+      code: "ENGINE_NETWORK_ERROR",
+      engine: engine.id,
+      engineName: engine.name,
+      reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
+    });
   } finally {
     clearTimeout(timeout);
   }

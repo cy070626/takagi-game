@@ -29,6 +29,7 @@
 | 名称 | 内容 | 必需 |
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | DeepSeek 官方 API Key | 是 |
+| `QWEN_API_KEY` | 阿里云百炼千问 API Key | 是 |
 | `ADMIN_PASSWORD` | 访问者使用 AI 对话时输入的密码 | 是 |
 
 修改访问密码时，只需更新 Netlify 后台的 `ADMIN_PASSWORD` 并重新部署。代码和 GitHub 仓库中不保存真实密码。
@@ -38,7 +39,7 @@
 1. 浏览器把访问者输入的密码随聊天请求发送到 `/api/chat`。
 2. Netlify Function 使用 `process.env.ADMIN_PASSWORD` 校验。
 3. 密码缺失或错误时返回 HTTP 401，并停止处理，不调用 DeepSeek。
-4. 校验成功后才读取 `DEEPSEEK_API_KEY` 并调用 DeepSeek。
+4. 校验成功后才读取当前引擎对应的 `QWEN_API_KEY` 或 `DEEPSEEK_API_KEY` 并调用模型。
 5. 成功验证的密码只保留在当前浏览器标签页的 `sessionStorage`，关闭标签页后清除。用户也可点击“清除”。
 
 ## 当前会话与用量规则
