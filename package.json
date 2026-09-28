@@ -1,5 +1,9 @@
 {
   "name": "takagi-v60-netlify-deepseek",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "check": "node --check netlify/functions/chat.js && node --check js/experience.js",
+    "test": "node --test \"tests/*.test.mjs\""
+  }
 }

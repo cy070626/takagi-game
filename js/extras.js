@@ -10,18 +10,18 @@
   $('.scene-controls').after(gallery);
   const pictures={};let database,uploading=false;
   const festivalFrames=[
-    {src:'./assets/festival-scenes/festival-stairs-01.jpg',label:'夏祭 · 石阶相遇',alt:'夏日祭夜晚，高木与西片走在灯火映亮的石阶上',supplied:true},
-    {src:'./assets/festival-scenes/festival-close-01.jpg',label:'夏祭 · 浴衣近景',alt:'夏日祭夜晚，身着浴衣的高木回头看向身旁',supplied:true},
-    {src:'./assets/festival-scenes/festival-stairs-02.jpg',label:'夏祭 · 灯火同行',alt:'夏日祭灯火下，高木与西片并肩走过石阶',supplied:true},
-    {src:'./assets/festival-scenes/festival-hands.jpg',label:'夏祭 · 握住的手',alt:'夏日祭夜晚，两个人在人群中握住彼此的手',supplied:true},
-    {src:'./assets/festival-scenes/festival-blush.jpg',label:'夏祭 · 一瞬脸红',alt:'夏日祭夜晚，高木微微脸红的近景',supplied:true},
-    {src:'./assets/festival-scenes/festival-together.jpg',label:'夏祭 · 没有走散',alt:'夏日祭夜晚，高木与西片牵手站在人群前',supplied:true},
-    {src:'./assets/festival-scenes/festival-sky.jpg',label:'夏祭 · 烟花以前',alt:'夏日祭的深蓝夜空下，两个人安静站在一起',supplied:true}
+    {src:'./assets/user-gallery-202609/b1-01.webp',label:'夏祭 · 石阶相遇',alt:'夏日祭夜晚，高木与西片走在灯火映亮的石阶上',supplied:true},
+    {src:'./assets/user-gallery-202609/b1-02.webp',label:'夏祭 · 浴衣近景',alt:'夏日祭夜晚，身着浴衣的高木回头看向身旁',supplied:true},
+    {src:'./assets/user-gallery-202609/b1-03.webp',label:'夏祭 · 灯火同行',alt:'夏日祭灯火下，高木与西片并肩走过石阶',supplied:true},
+    {src:'./assets/user-gallery-202609/b1-04.webp',label:'夏祭 · 握住的手',alt:'夏日祭夜晚，两个人在人群中握住彼此的手',supplied:true},
+    {src:'./assets/user-gallery-202609/b1-05.webp',label:'夏祭 · 一瞬脸红',alt:'夏日祭夜晚，高木微微脸红的近景',supplied:true},
+    {src:'./assets/user-gallery-202609/b1-06.webp',label:'夏祭 · 没有走散',alt:'夏日祭夜晚，高木与西片牵手站在人群前',supplied:true},
+    {src:'./assets/user-gallery-202609/b1-07.webp',label:'夏祭 · 烟花以前',alt:'夏日祭的深蓝夜空下，两个人安静站在一起',supplied:true}
   ];
   const festivalGalleryAssets=[
-    {src:'./assets/festival-scenes/festival-manga-walk.jpg',label:'原作选图 · 浴衣同行',alt:'原作漫画中，高木与西片身着浴衣同行的画面',supplied:true,fit:'contain'},
-    {src:'./assets/festival-scenes/festival-manga-portrait.jpg',label:'原作选图 · 祭典回眸',alt:'原作漫画中，高木身着浴衣回眸的近景',supplied:true,fit:'contain'},
-    {src:'./assets/festival-scenes/festival-manga-dialogue.jpg',label:'原作选图 · 夏夜对话',alt:'原作漫画中，高木在夏日祭说话的画面',supplied:true,fit:'contain'}
+    {src:'./assets/user-gallery-202609/b3-04.webp',label:'原作选图 · 浴衣同行',alt:'原作漫画中，高木与西片身着浴衣同行的画面',supplied:true,fit:'contain'},
+    {src:'./assets/user-gallery-202609/b3-05.webp',label:'原作选图 · 祭典回眸',alt:'原作漫画中，高木身着浴衣回眸的近景',supplied:true,fit:'contain'},
+    {src:'./assets/user-gallery-202609/b3-06.webp',label:'原作选图 · 夏夜对话',alt:'原作漫画中，高木在夏日祭说话的画面',supplied:true,fit:'contain'}
   ];
   let festivalFrameIndex=0,festivalTimer=null,festivalPaused=false;
   const festivalPlayer=textEl('div','','festival-slides');festivalPlayer.hidden=true;festivalPlayer.setAttribute('aria-label','夏日祭画面轮播');
@@ -55,11 +55,11 @@
     {src:'./assets/official-chapters/valentine.jpg',label:'官方分集 · 2月14日',alt:'第三季第十一话官方画面，黑板写着二月十四日',source:'第三季第11话官方分集页',href:'https://takagi3.me/3rd/episodes/ep11.html',fit:'contain'},
     {src:'./assets/official-chapters/white-day.jpg',label:'官方分集 · 3月14日',alt:'第三季第十二话官方画面，夕阳归途与准备好的回礼',source:'第三季第12话官方分集页',href:'https://takagi3.me/3rd/episodes/ep12.html',fit:'contain'},
     {src:'./assets/official-chapters/festival.jpg',label:'官方分集 · 夏祭',alt:'第二季夏祭官方画面，身着浴衣的高木同学与西片逛摊位',source:'第二季第12话官方故事页',href:'https://takagi3.me/2nd/story/story12.php',fit:'contain'},
-    {src:'./assets/takagi-reference.jpg',label:'官方 · 角色设定',alt:'动画第一季高木角色设定，正面、侧面和背面造型',source:'动画第一季官网',href:'https://takagi3.me/1st/character/'},
     {src:'./assets/takagi-movie.jpg',label:'官方 · 海边夏日',alt:'剧场版官方主视觉，高木与西片在海边抱着小猫',source:'剧场版官网',href:'https://takagi3.me/'},
     {src:'./assets/takagi-comic01.jpg',label:'原作 · 雨中封面',alt:'山本崇一朗原作漫画第一卷封面，高木与西片共伞',source:'动画第三季官网漫画介绍',href:'https://takagi3.me/3rd/'}
   ];
-  const suppliedGroup=(ids,label)=>ids.map((id,index)=>({src:`./assets/user-gallery-202609/${id}.webp`,thumb:`./assets/user-gallery-202609/${id}-thumb.webp`,label:`新增选图 · ${label} ${String(index+1).padStart(2,'0')}`,alt:`你提供的${label}相关画面`,supplied:true,fit:'contain',supplement:true}));
+  const suppliedThumbs=new Set(['b3-02','b3-09']);
+  const suppliedGroup=(ids,label)=>ids.map((id,index)=>({src:`./assets/user-gallery-202609/${id}.webp`,...(suppliedThumbs.has(id)?{thumb:`./assets/user-gallery-202609/${id}-thumb.webp`}:{}),label:`新增选图 · ${label} ${String(index+1).padStart(2,'0')}`,alt:`你提供的${label}相关画面`,supplied:true,fit:'contain',supplement:true}));
   const suppliedGallery={
     classroom:suppliedGroup(['b1-16','b1-18','b1-19','b1-20','b2-01','b2-02','b2-03','b2-04','b2-05','b2-09','b2-10','b2-11','b3-09','b3-15','b3-17'],'校园日常'),
     cafeteria:suppliedGroup(['b1-15','b3-08','b3-10','b3-16'],'午后闲谈'),

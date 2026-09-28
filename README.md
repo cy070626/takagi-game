@@ -1,122 +1,63 @@
-# 高木同学主题网站 V60 Netlify DeepSeek 版
+# Takagi V60 Netlify DeepSeek
 
-## 目录结构
+这是一个可直接放入 GitHub 仓库根目录并由 Netlify 部署的静态网站。主入口是 `index.html`，DeepSeek 请求由 `netlify/functions/chat.js` 转发。
 
-```text
-Takagi-V60-Netlify-DeepSeek/
-├── index.html
-├── _redirects
-├── netlify.toml
-├── package.json
-├── css/
-├── js/
-├── assets/
-├── games/
-├── pages/
-└── netlify/
-    └── functions/
-        └── chat.js
-```
-
-`index.html` 是网站入口。`netlify/functions/chat.js` 是服务端函数。浏览器只访问 `/api/chat`，真实的 DeepSeek API 密钥由 Netlify 运行环境读取。
-
-## 在 Netlify 设置密钥
-
-1. 打开 Netlify 中对应的站点。
-2. 进入 `Project configuration`，再进入 `Environment variables`。
-3. 新建变量，名称填写 `DEEPSEEK_API_KEY`。
-4. 值填写你自己的 DeepSeek API Key。
-5. 变量作用域选择 Functions 或全部作用域。
-6. 保存后重新部署一次站点。
-
-代码中没有密钥占位值。函数只通过下面这一行读取后台环境变量：
-
-```js
-const apiKey = process.env.DEEPSEEK_API_KEY;
-```
-
-不要把真实密钥写入 `chat.js`、前端 JavaScript、`netlify.toml` 或 Git 仓库。
-
-## 部署方式
-
-这个版本包含 Netlify Function。推荐使用以下任一方式部署：
-
-1. 将整个项目文件夹提交到 GitHub、GitLab 或 Bitbucket，然后在 Netlify 导入该仓库。
-2. 在项目根目录使用 Netlify CLI 执行 `netlify deploy --build --prod`。
-
-构建配置已经写入 `netlify.toml`：
-
-```toml
-[build]
-  publish = "."
-  functions = "netlify/functions"
-```
-
-普通 Netlify Drop 适合纯静态文件，不会完成 Function 的构建与部署。
-
-## 前端调用
-
-当前网站的 `js/experience.js` 已经完成接入，调用代码的核心形式如下：
-
-```js
-const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    message: '今天放学后有点累。',
-    mode: 'daily',
-    scene: 'classroom',
-    history: [
-      { role: 'user', content: '刚才在准备考试。' },
-      { role: 'assistant', content: '做到哪一部分了？' }
-    ]
-  })
-});
-
-const data = await response.json();
-if (!response.ok) throw new Error(data.error || '聊天服务暂时不可用');
-console.log(data.text);
-```
-
-函数会返回：
-
-```json
-{
-  "text": "主要回复",
-  "mood": "warm",
-  "topic": "after-school",
-  "suggestions": ["继续聊聊", "先休息一下"],
-  "knowledgeTags": ["校园", "学习"]
-}
-```
-
-## 路由和关键文件
-
-`_redirects` 中的第一条规则把 `/api/chat` 转发到 Function。该规则必须放在单页应用回退规则之前：
+## 目录
 
 ```text
-/api/chat /.netlify/functions/chat 200
-/* /index.html 200
+.
+├─ index.html
+├─ assets/                 压缩后的图片素材
+├─ css/                    页面样式
+├─ js/                     页面逻辑与游戏逻辑
+├─ games/                  独立游戏页面
+├─ pages/                  独立功能页面
+├─ netlify/
+│  └─ functions/
+│     └─ chat.js           DeepSeek 代理与访问密码校验
+├─ _redirects              /api/chat 路由
+├─ netlify.toml            Netlify 构建配置
+├─ package.json
+├─ .env.example            环境变量名称示例
+└─ .gitignore
 ```
 
-不要删除或改名以下文件：
+## Netlify 环境变量
 
-* `index.html`
-* `_redirects`
-* `netlify.toml`
-* `netlify/functions/chat.js`
-* `package.json`
+在 Netlify 的站点后台进入 **Site configuration > Environment variables**，添加：
 
-`assets/`、`css/`、`js/`、`games/` 和 `pages/` 的相对位置也应保持不变。
+| 名称 | 内容 | 必需 |
+| --- | --- | --- |
+| `DEEPSEEK_API_KEY` | DeepSeek 官方 API Key | 是 |
+| `ADMIN_PASSWORD` | 访问者使用 AI 对话时输入的密码 | 是 |
 
-## 已实现的保护
+修改访问密码时，只需更新 Netlify 后台的 `ADMIN_PASSWORD` 并重新部署。代码和 GitHub 仓库中不保存真实密码。
 
-* 只接受 POST 和 JSON 请求。
-* 拒绝浏览器跨站请求。
-* 限制消息、历史记录和图片大小。
-* 最多向 DeepSeek 发送最近 12 条短期对话。
-* 设置 25 秒上游超时。
-* 不向前端返回 DeepSeek 的原始错误正文。
-* API 密钥只在 Function 内读取。
+## 密码校验流程
 
-聊天默认使用 `deepseek-v4-flash`。在线调用失败时，现有前端会自动使用本地陪伴回复。
+1. 浏览器把访问者输入的密码随聊天请求发送到 `/api/chat`。
+2. Netlify Function 使用 `process.env.ADMIN_PASSWORD` 校验。
+3. 密码缺失或错误时返回 HTTP 401，并停止处理，不调用 DeepSeek。
+4. 校验成功后才读取 `DEEPSEEK_API_KEY` 并调用 DeepSeek。
+5. 成功验证的密码只保留在当前浏览器标签页的 `sessionStorage`，关闭标签页后清除。用户也可点击“清除”。
+
+## 部署
+
+1. 把本目录的全部内容提交到 GitHub 仓库根目录。
+2. 在 Netlify 连接该仓库。
+3. Publish directory 保持 `.`。Functions directory 保持 `netlify/functions`。
+4. 配置两项环境变量后触发一次新部署。
+5. 打开站点，输入错误密码验证出现提示，再输入正确密码完成一轮对话。
+
+## 不能删除或改名的文件
+
+- `index.html` 是站点入口。
+- `netlify/functions/chat.js` 负责服务端密码校验和 DeepSeek 调用。
+- `_redirects` 把 `/api/chat` 映射到 Netlify Function。
+- `netlify.toml` 声明发布目录和函数目录。
+- `assets/`、`css/`、`js/`、`games/`、`pages/` 中的相对路径已由页面引用。
+
+## 素材说明
+
+`assets/` 来自用户提供的 TinyPNG 压缩素材包。本版本只做原样复制，并通过 SHA-256 校验确认 128 个文件与输入目录一致。校验记录见 `assets-sha256.txt`。
+

@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+
 const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
 const DEEPSEEK_MODEL = "deepseek-v4-flash";
 const MAX_MESSAGE_LENGTH = 1200;
@@ -47,9 +49,15 @@ function cleanHistory(value) {
     .slice(-MAX_HISTORY_ITEMS)
     .map((item) => ({
       role: item?.role === "assistant" ? "assistant" : "user",
-      content: cleanText(item?.content, MAX_MESSAGE_LENGTH),
+      content: cleanText(item?.content ?? item?.text, MAX_MESSAGE_LENGTH),
     }))
     .filter((item) => item.content);
+}
+
+function passwordMatches(input, expected) {
+  const supplied = Buffer.from(typeof input === "string" ? input : "", "utf8");
+  const configured = Buffer.from(typeof expected === "string" ? expected : "", "utf8");
+  return supplied.length === configured.length && timingSafeEqual(supplied, configured);
 }
 
 function parseModelReply(content) {
@@ -126,11 +134,6 @@ export default async function handler(request) {
     return json(415, { error: "请求正文必须是 JSON" });
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) {
-    return json(503, { error: "站点尚未配置 DeepSeek API" });
-  }
-
   let body;
   try {
     const rawBody = await request.text();
@@ -140,6 +143,25 @@ export default async function handler(request) {
     body = JSON.parse(rawBody);
   } catch {
     return json(400, { error: "请求 JSON 无效" });
+  }
+
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    return json(503, {
+      error: "站点尚未配置 AI 访问密码",
+      code: "PASSWORD_NOT_CONFIGURED",
+    });
+  }
+  if (!passwordMatches(body?.password, adminPassword)) {
+    return json(401, {
+      error: "AI 访问密码不正确",
+      code: "INVALID_ADMIN_PASSWORD",
+    });
+  }
+
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) {
+    return json(503, { error: "站点尚未配置 DeepSeek API", code: "DEEPSEEK_NOT_CONFIGURED" });
   }
 
   const message = cleanText(body?.message, MAX_MESSAGE_LENGTH);

@@ -109,7 +109,7 @@
   const entryCopy=textEl('div','','music-entry-copy');
   entryCopy.append(textEl('span','MUSIC THEATER','music-entry-kicker'),textEl('h2','留一点音乐'),textEl('p','九个场景 · 青春歌单 · 本地音乐'));
   const scenePreview=textEl('div','','music-entry-scene');
-  const sceneImage=document.createElement('img');sceneImage.src=load('takagi-music-thumb')||'./assets/music-scenes/sunset-classroom-thumb.webp';sceneImage.alt='当前音乐场景';
+  const sceneImage=document.createElement('img');sceneImage.loading='lazy';sceneImage.decoding='async';sceneImage.src=load('takagi-music-thumb')||'./assets/music-scenes/sunset-classroom-thumb.webp';sceneImage.alt='当前音乐场景';
   const sceneMeta=textEl('div');const sceneName=textEl('strong',load('takagi-music-title')||'夕阳教室');const sceneTrack=textEl('small',load('takagi-music-track-title')||'言わないけどね。 · 大原ゆい子');sceneMeta.append(textEl('span','上次停留'),sceneName,sceneTrack);scenePreview.append(sceneImage,sceneMeta);
   const entryActions=textEl('div','','music-entry-actions');const openTheater=textEl('button','♫ 进入音乐小剧场','music-entry-open');const entryHint=textEl('small','全屏场景、Spotify 歌单与本地音乐。收起后可回到当前页面。','music-entry-hint');entryActions.append(openTheater,entryHint);
   music.append(entryCopy,scenePreview,entryActions);
