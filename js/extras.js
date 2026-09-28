@@ -30,13 +30,13 @@
   festivalFrames.forEach((frame,index)=>{const dot=textEl('button','','festival-slide-dot');dot.type='button';dot.setAttribute('aria-label',`显示${frame.label}`);dot.onclick=()=>{festivalFrameIndex=index;applyFestivalFrame(true);syncFestivalPlayer(true)};festivalDots.append(dot)});
   festivalPlayer.append(textEl('span','夏祭の記憶'),festivalDots,festivalToggle);sceneEl.append(festivalPlayer);
   const galleryAssets=[
-    {src:'./assets/takagi.png',label:'旧版 · 窗边日常',alt:'晴天下午，窗边的高木同学托着脸颊微笑'},
-    {src:'./assets/cafeteria.png',label:'旧版 · 食堂对坐',alt:'高木同学坐在食堂桌子对面的情境插画'},
-    {src:'./assets/study.png',label:'旧版 · 窗边学习',alt:'夜晚教室里的窗边学习情境插画'},
-    {src:'./assets/rain-corridor.png',label:'旧版 · 雨天走廊',alt:'雨天教学楼走廊的情境插画'},
-    {src:'./assets/summer-window.png',label:'旧版 · 夏日窗风',alt:'夏日放学后的窗边教室，高木同学回头微笑'},
-    {src:'./assets/evening-study.png',label:'旧版 AI · 夜灯自习',alt:'夜色中的教室，棕发少女在台灯旁写练习册'},
-    {src:'./assets/rain-gallery.png',label:'旧版 AI · 雨廊回眸',alt:'雨天教学楼走廊，棕发少女撑透明伞回头'},
+    {src:'./assets/takagi.webp',label:'旧版 · 窗边日常',alt:'晴天下午，窗边的高木同学托着脸颊微笑'},
+    {src:'./assets/cafeteria.webp',label:'旧版 · 食堂对坐',alt:'高木同学坐在食堂桌子对面的情境插画'},
+    {src:'./assets/study.webp',label:'旧版 · 窗边学习',alt:'夜晚教室里的窗边学习情境插画'},
+    {src:'./assets/rain-corridor.webp',label:'旧版 · 雨天走廊',alt:'雨天教学楼走廊的情境插画'},
+    {src:'./assets/summer-window.webp',label:'旧版 · 夏日窗风',alt:'夏日放学后的窗边教室，高木同学回头微笑'},
+    {src:'./assets/evening-study.webp',label:'旧版 AI · 夜灯自习',alt:'夜色中的教室，棕发少女在台灯旁写练习册'},
+    {src:'./assets/rain-gallery.webp',label:'旧版 AI · 雨廊回眸',alt:'雨天教学楼走廊，棕发少女撑透明伞回头'},
     {src:'./assets/gm/takagi-sunset-close.jpg',label:'资料包 · 夕照近景',alt:'山坡夕照下，高木同学回头微笑的近景',supplied:true},
     {src:'./assets/gm/takagi-manga-glance.gif',label:'资料包 · 漫画回眸',alt:'黑白漫画风格的高木同学动态回眸',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-winter-scarf.jpg',label:'资料包 · 冬日围巾',alt:'冬日里戴围巾的高木同学侧身看向前方',supplied:true,fit:'contain'},
@@ -78,10 +78,12 @@
   status.setAttribute('role','status');
   const picker=document.createElement('input');picker.type='file';picker.accept='image/png,image/jpeg,image/webp';picker.multiple=true;picker.hidden=true;
   const thumbs=document.createElement('div');thumbs.className='gallery-thumbs';
-  const supplement=document.createElement('details');supplement.className='gallery-supplement';supplement.open=true;
+  const supplement=document.createElement('details');supplement.className='gallery-supplement';supplement.open=false;
   const supplementSummary=document.createElement('summary');
   const supplementIntro=textEl('p','依据画面线索归入当前 Chapter。点击缩略图后才会替换主画面，章节默认图保持不变。','gallery-supplement-note');
   const supplementThumbs=document.createElement('div');supplementThumbs.className='gallery-thumbs gallery-supplement-thumbs';
+  const thumbObserver='IntersectionObserver' in window?new IntersectionObserver(entries=>entries.forEach(entry=>{if(!entry.isIntersecting)return;const image=entry.target,src=image.dataset.src;if(src){image.src=src;delete image.dataset.src}thumbObserver.unobserve(image)}),{rootMargin:'180px'}):null;
+  const loadThumb=(image,src,immediate=false)=>{if(immediate||!thumbObserver)image.src=src;else{image.dataset.src=src;thumbObserver.observe(image)}};
   supplement.append(supplementSummary,supplementIntro,supplementThumbs);
   const choose=textEl('button','＋ 添加本章图片');choose.type='button';choose.onclick=()=>picker.click();
   const restore=textEl('button','恢复章节匹配');restore.type='button';
@@ -91,7 +93,7 @@
   const entry=key=>pictures[key]||(pictures[key]={files:[],selected:0,galleryVersion:8});
   function applyFestivalFrame(animate=false){
     const frame=festivalFrames[festivalFrameIndex%festivalFrames.length];
-    const swap=()=>{character.src=frame.src;character.alt=frame.alt;$('.avatar img').src=frame.src;sceneEl.dataset.artSource='supplied';sceneEl.dataset.artFit='cover';cinemaBackdrop.style.backgroundImage=`url(${JSON.stringify(frame.src)})`;[...festivalDots.children].forEach((dot,index)=>dot.setAttribute('aria-current',String(index===festivalFrameIndex)))};
+    const swap=()=>{character.src=frame.src;character.alt=frame.alt;sceneEl.dataset.artSource='supplied';sceneEl.dataset.artFit='cover';cinemaBackdrop.style.backgroundImage=`url(${JSON.stringify(frame.src)})`;[...festivalDots.children].forEach((dot,index)=>dot.setAttribute('aria-current',String(index===festivalFrameIndex)))};
     if(animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const out=character.animate([{opacity:1},{opacity:.12}],{duration:180,easing:'ease-in',fill:'forwards'});out.finished.then(()=>{swap();character.animate([{opacity:.12},{opacity:1}],{duration:300,easing:'ease-out'});out.cancel()}).catch(swap)}else swap();
   }
   function syncFestivalPlayer(enabled){
@@ -106,13 +108,13 @@
   let urls=[];
   async function removePicture(key,userIndex){const data=entry(key),builtInCount=builtIns(key).length,removedIndex=builtInCount+userIndex;data.files.splice(userIndex,1);if(data.selected===removedIndex)data.selected=0;else if(data.selected>removedIndex)data.selected--;refresh();try{await persist(key);status.textContent=`已删除${scenes[key].name}中的这张图片。`}catch{status.textContent='图片已删除，但浏览器未能保存此次操作。'}}
   function refresh(){
-    urls.forEach(url=>URL.revokeObjectURL(url));urls=[];thumbs.replaceChildren();supplementThumbs.replaceChildren();
+    urls.forEach(url=>URL.revokeObjectURL(url));urls=[];thumbObserver?.disconnect();thumbs.replaceChildren();supplementThumbs.replaceChildren();
     const key=activeScene,data=entry(key);const builtIn=builtIns(key);
     supplementSummary.textContent=`补充图库 · ${(suppliedGallery[key]||[]).length} 张`;
     const items=[...builtIn,...data.files.map((file,userIndex)=>{const src=URL.createObjectURL(file);urls.push(src);return{src,label:`我的图片 ${userIndex+1}`,alt:`${scenes[key].name}的本地自选图片`,userIndex}})];
     const selectedIndex=Math.max(0,Math.min(data.selected,items.length-1));data.selected=selectedIndex;
-    items.forEach((item,i)=>{const wrap=textEl('div','','gallery-thumb');const b=textEl('button','','gallery-choice');b.type='button';b.setAttribute('aria-label',item.label);b.setAttribute('aria-pressed',String(selectedIndex===i));const image=document.createElement('img');image.src=item.thumb||item.src;image.alt='';image.loading='lazy';image.decoding='async';image.fetchPriority=selectedIndex===i?'auto':'low';b.append(image,textEl('span',item.label));b.onclick=async()=>{data.selected=i;refresh();try{await persist(key)}catch{status.textContent='已切换；浏览器未能保存此次选择。'}};wrap.append(b);if(Number.isInteger(item.userIndex)){const remove=textEl('button','×','gallery-remove');remove.type='button';remove.setAttribute('aria-label',`删除${item.label}`);remove.title='删除这张图片';remove.onclick=()=>removePicture(key,item.userIndex);wrap.append(remove)}(item.supplement?supplementThumbs:thumbs).append(wrap)});
-    const selected=items[selectedIndex]||items[0],festivalDefault=key==='festival'&&selectedIndex===0;if(festivalDefault){applyFestivalFrame()}else{character.src=selected.src;character.alt=selected.alt;$('.avatar img').src=selected.src;sceneEl.dataset.artSource=selected.source?'official':selected.supplied?'supplied':'scene';sceneEl.dataset.artFit=selected.fit||'cover';cinemaBackdrop.style.backgroundImage=`url(${JSON.stringify(selected.src)})`;}syncFestivalPlayer(festivalDefault);credit.replaceChildren();
+    items.forEach((item,i)=>{const wrap=textEl('div','','gallery-thumb');const b=textEl('button','','gallery-choice');b.type='button';b.setAttribute('aria-label',item.label);b.setAttribute('aria-pressed',String(selectedIndex===i));const image=document.createElement('img');loadThumb(image,item.thumb||item.src,selectedIndex===i);image.alt='';image.loading='lazy';image.decoding='async';image.fetchPriority=selectedIndex===i?'auto':'low';b.append(image,textEl('span',item.label));b.onclick=async()=>{data.selected=i;refresh();try{await persist(key)}catch{status.textContent='已切换；浏览器未能保存此次选择。'}};wrap.append(b);if(Number.isInteger(item.userIndex)){const remove=textEl('button','×','gallery-remove');remove.type='button';remove.setAttribute('aria-label',`删除${item.label}`);remove.title='删除这张图片';remove.onclick=()=>removePicture(key,item.userIndex);wrap.append(remove)}(item.supplement?supplementThumbs:thumbs).append(wrap)});
+    const selected=items[selectedIndex]||items[0],festivalDefault=key==='festival'&&selectedIndex===0;if(festivalDefault){applyFestivalFrame()}else{character.src=selected.src;character.alt=selected.alt;sceneEl.dataset.artSource=selected.source?'official':selected.supplied?'supplied':'scene';sceneEl.dataset.artFit=selected.fit||'cover';cinemaBackdrop.style.backgroundImage=`url(${JSON.stringify(selected.src)})`;}syncFestivalPlayer(festivalDefault);credit.replaceChildren();
     if(festivalDefault)credit.textContent='夏日祭默认轮播 · 使用你提供的原作画面，可暂停或点选画面。';else if(selected.source){credit.append(document.createTextNode('原作参考 · '+selected.source+' · © 山本崇一朗／小学館及相关动画制作委员会 · '));const link=textEl('a','查看原出处');link.href=selected.href;link.target='_blank';link.rel='noopener noreferrer';const full=textEl('a','查看完整图片');full.href=selected.src;full.target='_blank';full.rel='noopener noreferrer';credit.append(link,document.createTextNode(' · '),full)}else if(selected.supplied)credit.textContent='你提供的画面，仅在主动选择后显示。已生成 WebP 展示版和独立缩略图。';else credit.textContent=selected.label.startsWith('AI')?'保留的 AI 情境插画，仅在主动选择后显示。':selected.label.startsWith('章节默认')?'当前 Chapter 自动匹配的默认情境画面。':'你选择的本地图片，仅保存在此浏览器。';choose.disabled=uploading;restore.disabled=uploading||selectedIndex===0;clear.disabled=uploading||!data.files.length;
   }
   window.refreshSceneGallery=refresh;
@@ -133,5 +135,5 @@
   interact=function(action){if(action!=='bet')return originalInteract(action);const answer=1+Math.floor(Math.random()*3);const body=document.createElement('div');body.append(textEl('p','我选好了 1、2、3 中的一个数字。你只有一次机会，要猜哪个？'));const options=document.createElement('div');options.className='guess-options';body.append(options);[1,2,3].forEach(value=>{const button=textEl('button',String(value));options.append(button);button.onclick=()=>{options.querySelectorAll('button').forEach(b=>b.disabled=true);const line=value===answer?`猜对了，是 ${answer}。这局算你赢。`:`我选的是 ${answer}。这局被我赢了一次，要再试试吗？`;body.append(textEl('p',line));speak(line,'playful');add('assistant',line);const again=textEl('button','再玩一局','setting');again.onclick=()=>interact('bet');body.append(again)}});openDialog('数字小挑战',body);return{action:'bet',reply:'数字挑战已开始'}};
 })();
 
-const puzzlesScript=document.createElement('script');puzzlesScript.src='./js/puzzles.js?v=31';puzzlesScript.onload=()=>{const extraScript=document.createElement('script');extraScript.src='./js/puzzles-extra.js?v=31';extraScript.onload=()=>{const leisureScript=document.createElement('script');leisureScript.src='./js/leisure.js?v=57';leisureScript.onload=()=>{const arcadeScript=document.createElement('script');arcadeScript.src='./js/arcade-v2.js?v=61';arcadeScript.onload=()=>{const omikujiScript=document.createElement('script');omikujiScript.src='./js/omikuji.js?v=53';omikujiScript.onload=()=>{const memoriesScript=document.createElement('script');memoriesScript.src='./js/memories.js?v=47';document.body.append(memoriesScript)};document.body.append(omikujiScript)};document.body.append(arcadeScript)};document.body.append(leisureScript)};document.body.append(extraScript)};document.body.append(puzzlesScript);
+const gamesScript=document.createElement('script');gamesScript.src='./js/games-bundle.js?v=62';gamesScript.onload=()=>{const sidebarScript=document.createElement('script');sidebarScript.src='./js/sidebar-bundle.js?v=62';document.body.append(sidebarScript)};document.body.append(gamesScript);
 

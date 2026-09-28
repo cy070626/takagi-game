@@ -1,9 +1,10 @@
 {
-  "name": "takagi-v61-netlify-deepseek",
+  "name": "takagi-v62-netlify-deepseek",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check netlify/functions/chat.js && node --check js/experience.js",
+    "build:bundles": "node scripts/build-bundles.mjs",
+    "check": "npm run build:bundles && node --check netlify/functions/chat.js && node --check js/experience.js && node --check js/extras.js && node --check js/games-bundle.js && node --check js/sidebar-bundle.js",
     "test": "node --test \"tests/*.test.mjs\""
   }
 }

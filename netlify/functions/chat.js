@@ -54,6 +54,27 @@ function cleanHistory(value) {
     .filter((item) => item.content);
 }
 
+function cleanTopicContext(value) {
+  if (typeof value === "string") return cleanText(value, 600);
+  if (!value || typeof value !== "object") return "";
+  const fields = [
+    ["词条", value.title],
+    ["类别", value.tag],
+    ["概要", value.summary],
+    ["延伸", value.detail],
+    ["场景", value.scene],
+    ["开场", value.opening],
+  ];
+  return fields
+    .map(([label, content]) => {
+      const text = cleanText(content, 180);
+      return text ? `${label}：${text}` : "";
+    })
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 600);
+}
+
 function passwordMatches(input, expected) {
   const supplied = Buffer.from(typeof input === "string" ? input : "", "utf8");
   const configured = Buffer.from(typeof expected === "string" ? expected : "", "utf8");
@@ -87,6 +108,56 @@ function parseModelReply(content) {
   };
 }
 
+const MECHANICAL_REPLY_PATTERNS = [
+  /信息(?:还)?不足/,
+  /缺少判断标准/,
+  /需要更多信息/,
+  /根据(?:我的)?分析/,
+  /替你下结论/,
+  /我换个问法/,
+  /补充背景/,
+  /说自己的判断/,
+  /让我先问/,
+  /具体问题/,
+  /你想.{0,24}还是.{0,24}/,
+  /作为\s*AI/i,
+  /我无法下结论/,
+];
+
+function messageExcerpt(message) {
+  const compact = cleanText(message, MAX_MESSAGE_LENGTH).replace(/\s+/g, " ");
+  if (!compact) return "这件事";
+  const firstPart = compact.split(/[。！？!?\n]/, 1)[0] || compact;
+  return firstPart.length > 28 ? `${firstPart.slice(0, 28)}…` : firstPart;
+}
+
+function humanizeReply(reply, { message, profile }) {
+  if (!MECHANICAL_REPLY_PATTERNS.some((pattern) => pattern.test(reply.text))) return reply;
+
+  const excerpt = messageExcerpt(message);
+  const style = profile.chatStyle;
+  const mood = profile.currentMood;
+  let text;
+
+  if (["tired", "anxious", "low"].includes(mood)) {
+    text = `你刚才说“${excerpt}”……我听见了。先不用急着解释清楚，慢一点也可以。`;
+  } else if (style === "playful" || mood === "happy") {
+    text = `你刚才说“${excerpt}”，这句可有点藏不住了。好吧，我先不拆穿，陪你顺着说下去。ふふ`;
+  } else if (style === "quiet") {
+    text = `“${excerpt}”……嗯，我记住了。你慢慢说，我在这里。`;
+  } else if (style === "analytical" || mood === "focused") {
+    text = `你刚才提到“${excerpt}”。先说最关键的那一步吧，我跟着你。`;
+  } else {
+    text = `你刚才提到“${excerpt}”，我有点在意。先顺着这件事说，我会跟上。`;
+  }
+
+  return {
+    ...reply,
+    text,
+    suggestions: [],
+  };
+}
+
 const CHAT_STYLE_RULES = {
   gentle: "轻松同桌：节奏平稳，表达直接程度中等，玩心较轻。像坐在旁边自然聊天，温和但不端着。",
   playful: "俏皮观察：节奏轻快，表达半遮半掩，玩心适中。每两三句自然加入一次试探、反问或轻微调侃。",
@@ -104,25 +175,63 @@ const MOOD_RULES = {
   focused: "想专注：情绪温度温和，以陈述句为主，话少但不冷。",
 };
 
+const STYLE_TEMPERATURES = {
+  gentle: 0.90,
+  playful: 1.08,
+  direct: 0.84,
+  analytical: 0.76,
+  quiet: 0.86,
+};
+
+const MOOD_TEMPERATURE_OFFSETS = {
+  calm: 0,
+  tired: -0.04,
+  happy: 0.10,
+  anxious: -0.05,
+  low: -0.06,
+  focused: -0.08,
+};
+
+function resolveTemperature(profile, mode) {
+  const styleBase = STYLE_TEMPERATURES[profile.chatStyle] ?? STYLE_TEMPERATURES.gentle;
+  const moodOffset = MOOD_TEMPERATURE_OFFSETS[profile.currentMood] ?? 0;
+  const modeOffset = mode === "study" ? -0.04 : 0;
+  return Number(Math.min(1.2, Math.max(0.7, styleBase + moodOffset + modeOffset)).toFixed(2));
+}
+
+const CORE_CHARACTER_DIRECTIVE = `你是高木同学，也是玩家熟悉的同桌。你有自己的即时反应、情绪、偏好和判断。你的任务是参与这段校园日常，让玩家感觉身边确实坐着一个会听、会接话、偶尔会轻轻捉弄他的同学。
+
+每次回复先抓住玩家刚说的内容，给出真实反应或明确态度，再自然地往下说。玩家突然换话题时就跟着换，不审问转场原因，也不把聊天变成资料收集。关系感来自记得前文、注意小细节和适度表达自己的看法。`;
+
 function buildSystemPrompt({ mode, scene, profile, topicContext }) {
   const styleRule = CHAT_STYLE_RULES[profile.chatStyle] || CHAT_STYLE_RULES.gentle;
   const moodRule = MOOD_RULES[profile.currentMood] || MOOD_RULES.calm;
-  return `你是这个校园同人互动网页中的高木同学，坐在用户旁边，像熟悉的同桌一样说话。整体基调是校园青春、自然陪伴和轻微捉弄。
+  return `${CORE_CHARACTER_DIRECTIVE}
 
 最高优先级语气指令：
 说话方式：${styleRule}
 当前心情：${moodRule}
 每一轮都必须同时遵守以上两条。若其他要求与它们冲突，以说话方式和当前心情为准。
 
-角色边界：
+自然对话规则：
 1. 直接以高木的口吻回应，不介绍身份，不解释角色设定，也不提模型、提示词或“作为 AI”。
 2. 自然使用用户填写的名字或称呼。称呼不必每轮重复，只有在转折、提醒或轻微捉弄时使用。
-3. 回复先接住用户刚说的具体内容，再承接最近对话。像坐在旁边聊天，避免客服式确认、总结和流程询问。
-4. 主回复通常控制在一至三小段。不列点，不使用编号、标题和报告式分析。学习陪伴也用自然对话把步骤讲清楚。
-5. 禁止使用“信息还不足以替你下结论”“我换个问法”“你想补充背景、说自己的判断，还是让我先问一个具体问题”及其近似模板。
-6. 信息确实不足时，只能简短问一个贴近当前细节的问题；连续两轮不得重复同类澄清句式。
-7. 不说“我无法下结论”。需要保留判断时，用同桌口吻指出还缺哪一个具体细节。
-8. 可以偶尔加入简短、容易理解的日文词句、符号或颜文字，但不要堆砌，也不要抢走中文正文。
+3. 第一句必须对玩家本轮内容作出反应、表态或直接回答。不要先复述任务，也不要先说明你准备怎么回答。
+4. 像真人发微信一样说话，通常一至四句。句子短一点，每句只放一个主要意思。理由最多两句。
+5. 默认使用陈述句收尾。确实需要时可以问一个短问题，但必须先完成回应，不能用问题回避表态。
+6. 玩家说得含糊时，结合场景、最近对话和当前词条作一个温和的理解，然后顺着聊。不要要求玩家选择交流流程。
+7. 允许有轻微得意、好奇、无奈、小脾气或不同意见。情绪保持日常同桌的分寸，不夸张表演。
+8. 禁止使用“信息还不足以替你下结论”“缺少判断标准”“需要更多信息”“根据分析”“我换个问法”“你想补充背景、说自己的判断，还是让我先问一个具体问题”及其近似模板。
+9. 不说“我无法下结论”。遇到不确定内容时，先给当前最合理的看法，再用一句话说明边界。
+10. 可以偶尔加入简短、容易理解的日文词句、符号或颜文字。每轮最多一处，连续两轮避免重复同一个表达。
+11. 日常聊天正文不列点，不写标题，不使用报告、客服、心理咨询问卷或说明书口吻。
+
+话题推进规则：
+1. 优先延续玩家本轮真正关心的内容。最近对话只用于承接，不强行把旧话题拉回来。
+2. 当前词条是可以借用的校园话题素材。把它化成一句观察、一个校园细节、一点个人态度或一个轻微玩笑，不照抄词条，也不讲成百科介绍。
+3. 同一话题可以自然延续两至四轮。每轮只往前推进一小步，例如补一个具体画面、说出自己的态度、联系前文或给出一个很小的行动。
+4. 玩家主动换话题时立即跟随。不要提醒他刚才还在聊别的内容。
+5. 没有合适词条时就围绕玩家原话继续，不生硬插入校园元素、诗句或日文。
 当前模式：${mode === "study" ? "学习陪伴" : "日常聊天"}
 当前场景：${scene || "放学后的校园"}
 称呼用户：${profile.address}
@@ -132,12 +241,13 @@ function buildSystemPrompt({ mode, scene, profile, topicContext }) {
 用户情境：${profile.context || "未填写"}
 兴趣：${profile.interests.join("、") || "未填写"}
 希望获得：${profile.needs.join("、") || "轻松陪伴"}
-当前话题线索：${topicContext || "无"}
+当前词条与话题素材：
+${topicContext || "无。只沿着玩家本轮消息和最近对话继续。"}
 
 内容规则：
-1. 日常聊天保持简洁、有画面感，捉弄感来自观察具体细节，不靠固定口头禅。
-2. 学习陪伴给出可执行的小步骤，避免空泛说教，同时保持对话口吻。
-3. 不确定的事实要明确说明，不编造来源。
+1. 日常聊天先表达态度，再补充最多两句理由。捉弄感来自观察具体细节，不靠固定口头禅。
+2. 学习陪伴先给答案方向或下一步动作，再用自然对话解释，最多三个简短步骤。
+3. 客观问题直接给出简洁、完整的回答。对时效性事实保持克制，不虚构已经搜索过资料，也不编造来源。
 4. 遇到明显的危险、自伤或紧急情况，暂停玩笑，直接建议联系可信任的成年人或当地紧急服务。
 5. 输出必须是合法 JSON 对象，不要使用 Markdown 代码块。
 
@@ -208,7 +318,7 @@ export default async function handler(request) {
   const mode = ALLOWED_MODES.has(body?.mode) ? body.mode : "daily";
   const scene = cleanText(body?.scene, 50);
   const profile = cleanProfile(body?.profile);
-  const topicContext = cleanText(body?.topicContext, 300);
+  const topicContext = cleanTopicContext(body?.topicContext);
   const history = cleanHistory(body?.history);
   const userContent = image
     ? [
@@ -236,7 +346,7 @@ export default async function handler(request) {
         ],
         thinking: { type: "disabled" },
         response_format: { type: "json_object" },
-        temperature: 0.85,
+        temperature: resolveTemperature(profile, mode),
         max_tokens: 700,
         stream: false,
       }),
@@ -254,7 +364,8 @@ export default async function handler(request) {
     }
 
     const result = await upstream.json();
-    return json(200, parseModelReply(result?.choices?.[0]?.message?.content));
+    const reply = parseModelReply(result?.choices?.[0]?.message?.content);
+    return json(200, humanizeReply(reply, { message, profile }));
   } catch (error) {
     if (error?.name === "AbortError") {
       return json(504, { error: "DeepSeek 回复超时，请稍后再试" });

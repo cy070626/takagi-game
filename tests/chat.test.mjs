@@ -49,6 +49,7 @@ test("正确密码才调用 DeepSeek，并传入短期上下文", async () => {
   assert.equal(response.status, 200);
   assert.equal((await response.json()).text, "放学后见。");
   assert.equal(outbound.model, "deepseek-v4-flash");
+  assert.equal(outbound.temperature, 1.18);
   assert.match(outbound.messages[0].content, /最高优先级语气指令/);
   assert.match(outbound.messages[0].content, /俏皮观察/);
   assert.match(outbound.messages[0].content, /心情不错/);
@@ -100,4 +101,81 @@ test("短期上下文严格保留最近 12 条消息", async () => {
   assert.equal(context.length, 12);
   assert.equal(context[0].content, "消息 3");
   assert.equal(context.at(-1).content, "消息 14");
+});
+
+test("机械式澄清回复会被替换成承接玩家原话的陈述句", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.DEEPSEEK_API_KEY = "test-api-key";
+  globalThis.fetch = async () => Response.json({
+    choices: [{ message: { content: JSON.stringify({
+      text: "信息还不足以替你下结论。你想补充背景、说自己的判断，还是让我先问一个具体问题？",
+      mood: "warm",
+      suggestions: ["补充背景", "说我的判断", "问一个具体问题"],
+    }) } }],
+  });
+
+  const response = await handler(request({
+    message: "我跟同桌吵了一点，感觉怪怪的。",
+    password: "configured-secret",
+    profile: { chatStyle: "playful", currentMood: "happy" },
+  }));
+  const reply = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.doesNotMatch(reply.text, /信息(?:还)?不足|替你下结论|补充背景|具体问题/);
+  assert.match(reply.text, /我跟同桌吵了一点/);
+  assert.doesNotMatch(reply.text, /[？?]$/);
+  assert.deepEqual(reply.suggestions, []);
+});
+
+test("个性温度严格限制在 0.7 到 1.2", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.DEEPSEEK_API_KEY = "test-api-key";
+  const temperatures = [];
+  globalThis.fetch = async (_url, options) => {
+    temperatures.push(JSON.parse(options.body).temperature);
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ text: "好，我陪你继续。" }) } }] });
+  };
+
+  await handler(request({
+    message: "帮我理一下这道题。",
+    password: "configured-secret",
+    mode: "study",
+    profile: { chatStyle: "analytical", currentMood: "focused" },
+  }));
+  await handler(request({
+    message: "今天想开个玩笑。",
+    password: "configured-secret",
+    mode: "daily",
+    profile: { chatStyle: "playful", currentMood: "happy" },
+  }));
+
+  assert.deepEqual(temperatures, [0.7, 1.18]);
+  assert.ok(temperatures.every((value) => value >= 0.7 && value <= 1.2));
+});
+
+test("网页词条对象会转成可用的话题素材", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.DEEPSEEK_API_KEY = "test-api-key";
+  let outbound;
+  globalThis.fetch = async (_url, options) => {
+    outbound = JSON.parse(options.body);
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ text: "那张纸条，我可记得很清楚。" }) } }] });
+  };
+
+  const response = await handler(request({
+    message: "说起纸条，我突然想起一件事。",
+    password: "configured-secret",
+    topicContext: {
+      title: "传纸条",
+      tag: "校园日常",
+      summary: "课间写下没说出口的话",
+      opening: "纸条折了两次，停在课本旁边。",
+    },
+  }));
+
+  assert.equal(response.status, 200);
+  assert.match(outbound.messages[0].content, /词条：传纸条/);
+  assert.match(outbound.messages[0].content, /概要：课间写下没说出口的话/);
+  assert.match(outbound.messages[0].content, /不照抄词条/);
 });

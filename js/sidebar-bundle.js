@@ -1,0 +1,230 @@
+/* js/omikuji.js */
+(() => {
+  const fortunes = [
+    {name:'大吉',weight:8,tone:'sun',lead:'今天适合把期待说得具体一点。',lines:['先完成最想留下痕迹的一步，运气会跟上行动。','别急着证明自己，先让真正重要的事发生。','有人记得你随口说过的小事，今天也可以回应一次。']},
+    {name:'吉',weight:24,tone:'leaf',lead:'节奏很稳，适合慢慢把事情推进。',lines:['先做十分钟，再决定要不要继续。','绕一点路也没关系，沿途会多听见一种声音。','把一个模糊的约定说清楚，今天会轻松很多。']},
+    {name:'中吉',weight:26,tone:'sky',lead:'平常的一天里，会藏着一个值得记住的细节。',lines:['留意窗边、路口或车站的一次停顿。','先问清楚，再替别人猜答案。','今天适合整理旧想法，也适合开始一页新笔记。']},
+    {name:'小吉',weight:22,tone:'plum',lead:'小小的顺利，需要你主动伸手接住。',lines:['把任务缩小到现在就能完成的一步。','一句短回复，也能让等待的人安心。','如果犹豫，就选更容易回头调整的方向。']},
+    {name:'末吉',weight:15,tone:'rain',lead:'结果来得慢一些，先照顾好过程。',lines:['今天少做一件消耗你的事，也算进展。','别在疲惫时替明天做永久决定。','把没有说完的话记下来，晚一点再判断。']},
+    {name:'凶',weight:5,tone:'night',lead:'今天适合谨慎一点，也适合把负担减轻一点。',lines:['先检查时间、预算和承诺，再继续向前。','暂时没有答案时，停下来不会让事情更糟。','把最担心的结果写清楚，你会看见可以控制的部分。']}
+  ];
+  const total = fortunes.reduce((sum,item)=>sum+item.weight,0);
+  const sceneNotes = {
+    classroom:'放学铃之后，给自己留十分钟再出发。',
+    cafeteria:'先好好吃一顿，再处理复杂的决定。',
+    study:'只看下一步，今晚不用一次解决全部。',
+    rain:'雨声会遮住一点杂音，等你听清真正的想法。',
+    valentine:'期待可以坦白，回应也需要留出余地。',
+    whiteDay:'记得一件事，本身已经是一种回答。',
+    festival:'烟花很短，同行的路可以慢一点。'
+  };
+  const ritualScenes=[
+    {id:'spring',name:'春日神社',kana:'神社の春',src:'./assets/omikuji-scenes/spring.webp',position:'center center'},
+    {id:'beach',name:'夕暮海边',kana:'夏の海辺',src:'./assets/omikuji-scenes/beach.webp',position:'center center'},
+    {id:'festival',name:'祭典之夜',kana:'夏祭り',src:'./assets/omikuji-scenes/festival.webp',position:'center center'},
+    {id:'winter',name:'冬日雪景',kana:'冬の静けさ',src:'./assets/omikuji-scenes/winter.webp',position:'center center'}
+  ];
+  function randomUnit(){
+    if(window.crypto?.getRandomValues){const value=new Uint32Array(1);window.crypto.getRandomValues(value);return value[0]/4294967296}
+    return Math.random();
+  }
+  function drawFortune(){
+    let point=randomUnit()*total;
+    for(const item of fortunes){point-=item.weight;if(point<0)return item}
+    return fortunes[fortunes.length-1];
+  }
+  const shell=textEl('section','','omikuji-shell');shell.id='omikuji';
+  const summary=textEl('button','','omikuji-summary');summary.type='button';summary.setAttribute('aria-haspopup','dialog');
+  const summaryMark=textEl('span','御','omikuji-summary-mark');summaryMark.setAttribute('aria-hidden','true');
+  const summaryCopy=textEl('span','','omikuji-summary-copy');summaryCopy.append(textEl('strong','高木的御神签'),textEl('small','おみくじ · 点开抽一支今日签'));
+  const summaryStatus=textEl('span','今日未抽','omikuji-summary-status');
+  const summaryArrow=textEl('span','↗','omikuji-summary-arrow');summaryArrow.setAttribute('aria-hidden','true');
+  summary.append(summaryMark,summaryCopy,summaryStatus,summaryArrow);
+  shell.append(summary);
+  const modal=document.createElement('dialog');modal.className='omikuji-modal';modal.setAttribute('aria-labelledby','omikuji-title');
+  const modalFrame=textEl('div','','omikuji-modal-frame');
+  const backdrop=textEl('div','','omikuji-scene-backdrop');backdrop.setAttribute('aria-hidden','true');
+  const veil=textEl('div','','omikuji-scene-veil');veil.setAttribute('aria-hidden','true');
+  const modalHeader=textEl('header','','omikuji-modal-header');
+  const brand=textEl('div','','omikuji-modal-brand');brand.append(textEl('strong','高木同学'),textEl('small','Takagi-san · 御神签'));
+  const modalWish=textEl('p','今日という日が、少しでもやさしい日になりますように。','omikuji-modal-wish');
+  const closeButton=textEl('button','×','omikuji-close');closeButton.type='button';closeButton.setAttribute('aria-label','关闭御神签');
+  modalHeader.append(brand,modalWish,closeButton);
+  const area=textEl('section','','omikuji-area');area.setAttribute('aria-labelledby','omikuji-title');
+  const intro=textEl('div','','omikuji-intro');
+  intro.append(textEl('span','神社の午後 · 今日の一枚','omikuji-eyebrow'),textEl('h2','高木的御神签'));
+  intro.querySelector('h2').id='omikuji-title';
+  intro.append(textEl('p','先看看今天的景色。想抽签时，点一下签筒就好。'));
+  const nameRow=textEl('div','','omikuji-names');
+  const nameOne=document.createElement('input');nameOne.maxLength=12;nameOne.placeholder='例如：小林';nameOne.setAttribute('aria-label','你的昵称');
+  const nameTwo=document.createElement('input');nameTwo.maxLength=12;nameTwo.placeholder='例如：同行者';nameTwo.setAttribute('aria-label','同行者昵称');
+  const nameOneField=textEl('label','','omikuji-name-field');nameOneField.append(textEl('span','你的昵称 · 选填'),nameOne);
+  const nameTwoField=textEl('label','','omikuji-name-field');nameTwoField.append(textEl('span','同行者昵称 · 选填'),nameTwo);
+  nameRow.append(nameOneField,nameTwoField);
+  const controls=textEl('div','','omikuji-controls');
+  const drawButton=textEl('button','打开签盒','omikuji-draw');drawButton.type='button';
+  const rulesButton=textEl('button','查看签运概率','omikuji-rules');rulesButton.type='button';
+  controls.append(drawButton,rulesButton);
+  intro.append(textEl('p','填写后会印在纪念签上，留空也可以直接抽签。','omikuji-name-hint'),nameRow,controls,textEl('small','昵称只用于生成当前页面的纪念签，不会上传。签运概率不随场景变化。'));
+  const boxLaunch=textEl('button','','omikuji-box-launch');boxLaunch.type='button';boxLaunch.setAttribute('aria-label','打开御神签签盒');
+  const boxLaunchArt=textEl('span','','omikuji-box-launch-art');boxLaunchArt.setAttribute('aria-hidden','true');
+  const launchSticks=textEl('span','','omikuji-box-launch-sticks');for(let i=0;i<7;i++)launchSticks.append(textEl('i'));
+  boxLaunchArt.append(launchSticks,textEl('b','おみくじ'));
+  const boxLaunchCopy=textEl('span','','omikuji-box-launch-copy');boxLaunchCopy.append(textEl('strong','我要抽签'),textEl('small','点击签筒，打开抽签说明'));
+  boxLaunch.append(boxLaunchArt,boxLaunchCopy);
+  const stage=textEl('div','','omikuji-stage');stage.dataset.phase='idle';stage.hidden=true;
+  const torii=textEl('div','','omikuji-torii');torii.setAttribute('aria-hidden','true');
+  const cylinder=textEl('div','','omikuji-cylinder');cylinder.setAttribute('aria-hidden','true');cylinder.append(textEl('span','御神签'));
+  const stick=textEl('div','今日','omikuji-stick');stick.setAttribute('aria-hidden','true');
+  const paper=textEl('article','','omikuji-paper');paper.setAttribute('aria-live','polite');
+  const stageClose=textEl('button','×','omikuji-stage-close');stageClose.type='button';stageClose.setAttribute('aria-label','收起签盒');stageClose.title='收起签盒';
+  const idle=textEl('div','','omikuji-idle');idle.append(textEl('strong','おみくじ'),textEl('p','签盒已经打开。可以填写昵称，再点击左侧的“摇动签筒”。'));
+  paper.append(idle);stage.append(torii,cylinder,stick,paper,stageClose);
+  const scenePicker=textEl('div','','omikuji-scene-picker');scenePicker.setAttribute('aria-label','御神签场景');
+  let ritualSceneIndex=0;
+  function selectRitualScene(index){
+    ritualSceneIndex=index;const selected=ritualScenes[index];backdrop.style.backgroundImage=`url(${JSON.stringify(selected.src)})`;backdrop.style.backgroundPosition=selected.position;
+    scenePicker.querySelectorAll('button').forEach((button,i)=>{button.setAttribute('aria-pressed',String(i===index));button.classList.toggle('is-active',i===index)});
+  }
+  ritualScenes.forEach((item,index)=>{const button=textEl('button','','omikuji-scene-option');button.type='button';button.setAttribute('aria-label',`切换到${item.name}`);const image=document.createElement('img');image.src=item.src;image.alt='';image.loading='lazy';image.decoding='async';button.append(image,textEl('span',item.name),textEl('small',item.kana));button.onclick=()=>selectRitualScene(index);scenePicker.append(button)});
+  intro.insertBefore(boxLaunch,nameRow);area.append(intro,stage);modalFrame.append(backdrop,veil,modalHeader,area,scenePicker);modal.append(modalFrame);document.body.append(modal);selectRitualScene(0);
+  const anchor=document.querySelector('.leisure')||document.querySelector('.terms-preview');
+  anchor.after(shell);
+  let boxOpen=false;
+  function revealBox(){if(boxOpen)return;boxOpen=true;stage.hidden=false;boxLaunch.hidden=true;area.classList.add('box-open');drawButton.textContent='摇动签筒';stage.dataset.phase=lastResult?'result':'idle';setTimeout(()=>stage.classList.add('is-visible'),20)}
+  function hideBox(){if(drawing)return;boxOpen=false;stage.classList.remove('is-visible');area.classList.remove('box-open');drawButton.textContent='打开签盒';setTimeout(()=>{stage.hidden=true;boxLaunch.hidden=false;boxLaunch.focus()},180)}
+  function openOmikuji(){if(!modal.open)modal.showModal();document.body.classList.add('omikuji-modal-open');setTimeout(()=>(boxOpen?drawButton:boxLaunch).focus(),80)}
+  function closeOmikuji(){if(modal.open)modal.close()}
+  summary.onclick=openOmikuji;closeButton.onclick=closeOmikuji;modal.addEventListener('click',event=>{if(event.target===modal)closeOmikuji()});modal.addEventListener('close',()=>{document.body.classList.remove('omikuji-modal-open');if(boxOpen&&!drawing){boxOpen=false;stage.classList.remove('is-visible');stage.hidden=true;boxLaunch.hidden=false;area.classList.remove('box-open');drawButton.textContent='打开签盒'}});
+  boxLaunch.onclick=revealBox;stageClose.onclick=hideBox;
+  const navButton=document.querySelector('#omikuji-open');if(navButton)navButton.onclick=openOmikuji;
+  let drawing=false,lastResult=null,lastMessage='';
+  function preferredName(){return nameOne.value.trim()||profile?.address?.trim()||profile?.name?.trim()||'同桌'}
+  function companionLine(fortune){
+    const name=preferredName(),other=nameTwo.value.trim();
+    if(other)return `${name}和${other}的纪念签已经展开。签运只管今天的提示，真正的答案还是留给你们一起写。`;
+    const playful=fortune.name==='大吉'||fortune.name==='吉';
+    return playful?`${name}，抽到“${fortune.name}”以后表情这么认真，是准备把每一句都做到吗？`:`${name}，先别皱眉。签上写的是提醒，又不是替你决定今天。`;
+  }
+  function renderResult(fortune){
+    lastResult=fortune;const message=fortune.lines[Math.floor(randomUnit()*fortune.lines.length)],sceneLine=sceneNotes[activeScene]||sceneNotes.classroom;
+    summaryStatus.textContent=`今日签 · ${fortune.name}`;summaryStatus.dataset.tone=fortune.tone;
+    lastMessage=message;paper.replaceChildren();paper.dataset.tone=fortune.tone;
+    const head=textEl('div','','omikuji-paper-head');head.append(textEl('small','今日の運勢'),textEl('strong',fortune.name));
+    const portrait=document.createElement('img');portrait.src=ritualScenes[ritualSceneIndex].src;portrait.alt=`${ritualScenes[ritualSceneIndex].name}的御神签场景`;
+    const copy=textEl('div','','omikuji-copy');copy.append(textEl('h3',nameTwo.value.trim()?`${preferredName()} × ${nameTwo.value.trim()}`:`${preferredName()}的今日签`),textEl('p',fortune.lead),textEl('p',message,'omikuji-main-line'),textEl('small',sceneLine));
+    const actions=textEl('div','','omikuji-result-actions');const saveButton=textEl('button','保存纪念签');saveButton.type='button';const again=textEl('button','再抽一次');again.type='button';actions.append(saveButton,again);
+    paper.append(head,portrait,copy,actions);
+    saveButton.onclick=()=>saveCard(fortune,message,sceneLine);
+    again.onclick=()=>startDraw();
+    const line=companionLine(fortune);addContext(`御神签展开了：${fortune.name}`);add('assistant',line,fortune.name==='凶'?'quiet':'warm');speak(line,fortune.name==='大吉'?'playful':'warm');
+  }
+  function startDraw(){
+    if(!boxOpen){revealBox();return}
+    if(drawing)return;drawing=true;drawButton.disabled=true;rulesButton.disabled=true;stage.dataset.phase='shaking';
+    stageClose.disabled=true;
+    summaryStatus.textContent='正在抽签…';delete summaryStatus.dataset.tone;
+    paper.replaceChildren(textEl('p','签筒轻轻响了起来…','omikuji-progress'));
+    const result=drawFortune(),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const steps=reduced?[0,0,0]:[720,520,620];
+    setTimeout(()=>{stage.dataset.phase='stick';paper.firstChild.textContent='一支木签落了下来。';
+      setTimeout(()=>{stage.dataset.phase='paper';paper.firstChild.textContent='和纸正在展开…';
+        setTimeout(()=>{stage.dataset.phase='result';renderResult(result);drawing=false;drawButton.disabled=false;rulesButton.disabled=false;stageClose.disabled=false},steps[2]);
+      },steps[1]);
+    },steps[0]);
+  }
+  function saveCard(fortune,message,sceneLine){
+    const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1440;const ctx=canvas.getContext('2d');
+    const gradient=ctx.createLinearGradient(0,0,0,1440);gradient.addColorStop(0,'#f4eee2');gradient.addColorStop(1,'#e8efe3');ctx.fillStyle=gradient;ctx.fillRect(0,0,1080,1440);
+    ctx.strokeStyle='#9b4038';ctx.lineWidth=8;ctx.strokeRect(70,70,940,1300);ctx.fillStyle='#9b4038';ctx.fillRect(70,70,940,24);
+    ctx.textAlign='center';ctx.fillStyle='#6b2f2a';ctx.font='36px serif';ctx.fillText('放学后 · 高木的御神签',540,170);
+    ctx.font='bold 150px serif';ctx.fillText(fortune.name,540,390);
+    ctx.fillStyle='#344c3a';ctx.font='40px sans-serif';ctx.fillText(nameTwo.value.trim()?`${preferredName()} × ${nameTwo.value.trim()}`:`${preferredName()}的今日签`,540,500);
+    const lines=[fortune.lead,message,sceneLine,'きょうも、ゆっくりいこう。'];ctx.font='34px sans-serif';
+    lines.forEach((line,index)=>wrapCanvas(ctx,line,540,650+index*150,820,50));
+    ctx.font='24px sans-serif';ctx.fillStyle='#73806c';ctx.fillText('非官方同人互动 · 签运仅作轻松体验',540,1320);
+    const link=document.createElement('a');link.download='高木的今日御神签.png';link.href=canvas.toDataURL('image/png');link.click();
+  }
+  function wrapCanvas(ctx,text,x,y,maxWidth,lineHeight){
+    let line='';const rows=[];for(const char of Array.from(text)){const test=line+char;if(ctx.measureText(test).width>maxWidth&&line){rows.push(line);line=char}else line=test}if(line)rows.push(line);
+    rows.slice(0,3).forEach((row,index)=>ctx.fillText(row,x,y+index*lineHeight));
+  }
+  function showRules(){
+    const body=textEl('div','','omikuji-rules-dialog');body.append(textEl('p','每次抽取都使用同一组公开权重，合计 100%。昵称、章节和此前结果都不会改变概率。'));
+    const list=textEl('div','','omikuji-probabilities');fortunes.forEach(item=>{const row=textEl('div');row.append(textEl('strong',item.name),textEl('span',item.weight+'%'));list.append(row)});body.append(list);
+    body.append(textEl('h3','抽签流程'),textEl('p','点击“摇动签筒”后，会依次显示签筒摇动、木签掉出、和纸展开和今日寄语。开启减少动态效果时，流程会立即完成。'));
+    body.append(textEl('h3','结果说明'),textEl('p','抽签用于轻松体验。大吉等结果不与付费、分享次数或重复点击绑定，也不会作为现实决定的依据。'));
+    openDialog('御神签玩法与概率',body);
+  }
+  drawButton.onclick=startDraw;rulesButton.onclick=showRules;
+  window.TakagiOmikuji={fortunes:fortunes.map(({name,weight})=>({name,weight})),draw:drawFortune};
+})();
+
+/* js/memories.js */
+(() => {
+  const memories = [
+    ['互动 01','放学后，被看穿的一瞬间'],['互动 02','话还没说完，表情先承认了'],['互动 03','她好像早就知道答案'],['互动 04','走廊里短短的一次停步'],['互动 05','又输给她一次'],
+    ['互动 06','平常日子里的小小胜负'],['互动 07','视线碰到一起的时候'],['互动 08','没能藏住的反应'],['互动 09','下一句会说什么呢'],['互动 10','今天也被她捉弄了'],
+    ['教室互动','教室 · 放学后的两个人'],['雨天共伞','雨天 · 伞下的距离'],['走廊捉弄','走廊 · 熟悉的小玩笑'],['夏日祭典','夏日祭 · 灯火与人群'],['海边夕阳','海边 · 日落之前'],
+    ['舞台互动','舞台 · 意外的目光'],['雨中互动','雨声 · 没说出口的话'],['图书阅读','图书室 · 翻过同一页'],['教室捉弄','教室 · 她的又一次胜利'],['冬夜互动','冬夜 · 呼吸变成白雾'],
+    ['轻微脸红','细小的表情也会被记住'],['捂嘴害羞','笑意藏在指尖后面'],['低头脸红','低头的几秒钟'],['祭典害羞','祭典夜里的心事'],['书本遮脸','书页挡不住的反应'],
+    ['笑着脸红','笑着装作若无其事'],['惊讶脸红','突然靠近的一刻'],['夕阳侧目','夕阳把侧脸染得很轻'],['冬日害羞','冬天也有温热的瞬间'],['捂脸反应','这次真的被说中了']
+  ].map(([title,caption],index)=>({title,caption,src:`./assets/memories/memory-${String(index+1).padStart(2,'0')}.png`}));
+  const spots = [
+    [130,135,320,220,-5],[535,80,250,280,4],[890,195,350,225,-2],[1340,90,255,300,4],[1735,210,335,215,-4],
+    [300,440,240,300,3],[710,430,320,215,-5],[1115,520,235,290,4],[1485,445,350,220,2],[1950,500,235,290,-3],
+    [70,790,340,220,-3],[505,790,240,290,5],[880,865,330,215,2],[1285,755,250,305,-4],[1690,860,340,220,4],
+    [260,1160,245,300,-4],[655,1175,350,220,3],[1080,1135,240,290,-2],[1430,1220,320,215,5],[1880,1135,250,300,-4],
+    [65,1450,310,215,3],[455,1510,240,285,-5],[810,1435,330,220,4],[1190,1505,245,295,-3],[1550,1495,340,215,2],
+    [1945,1440,245,295,5],[200,1770,320,215,-3],[675,1740,245,290,4],[1120,1730,340,215,-4],[1650,1750,325,220,3]
+  ];
+  const shell=textEl('section','','memory-shell');shell.id='memories';
+  const summary=textEl('button','','memory-summary');summary.type='button';summary.setAttribute('aria-haspopup','dialog');
+  const mark=textEl('span','想','memory-summary-mark');mark.setAttribute('aria-hidden','true');
+  const copy=textEl('span','','memory-summary-copy');const summaryDetail=textEl('small','思い出の雨 · 拖动浏览 30 个片段');copy.append(textEl('strong','星夜回忆录'),summaryDetail);
+  const count=textEl('span','30 张','memory-summary-count');const arrow=textEl('span','↗','memory-summary-arrow');arrow.setAttribute('aria-hidden','true');summary.append(mark,copy,count,arrow);shell.append(summary);
+  const dialog=document.createElement('dialog');dialog.className='memory-modal';dialog.setAttribute('aria-labelledby','memory-title');
+  const frame=textEl('div','','memory-frame');
+  const ambience=textEl('div','','memory-ambience');ambience.setAttribute('aria-hidden','true');ambience.append(textEl('span','','memory-stars'),textEl('span','','memory-glow'),textEl('span','','memory-meteor memory-meteor-one'),textEl('span','','memory-meteor memory-meteor-two'));
+  const header=textEl('header','','memory-header');const heading=textEl('div','','memory-heading');const title=textEl('h2','思い出の雨');title.id='memory-title';heading.append(title,textEl('p','星夜回忆录 · DRIFT THROUGH THE MEMORIES'));
+  const close=textEl('button','×','memory-close');close.type='button';close.setAttribute('aria-label','关闭星夜回忆录');header.append(heading,close);
+  const viewport=textEl('div','','memory-viewport');viewport.tabIndex=0;viewport.setAttribute('aria-label','可拖动和缩放的照片回忆墙');const world=textEl('div','','memory-world');viewport.append(world);
+  const help=textEl('p','拖动浏览 · 滚轮或双指缩放 · 点击照片放大','memory-help');
+  const controls=textEl('div','','memory-controls');const zoomOut=textEl('button','−');const zoomValue=textEl('span','100%');const zoomIn=textEl('button','＋');const reset=textEl('button','复位');[zoomOut,zoomIn,reset].forEach(button=>button.type='button');zoomOut.setAttribute('aria-label','缩小回忆墙');zoomIn.setAttribute('aria-label','放大回忆墙');reset.setAttribute('aria-label','复位回忆墙');controls.append(zoomOut,zoomValue,zoomIn,reset);
+  const personalTools=textEl('div','','memory-personal-tools');const addPhotos=textEl('button','＋ 加入我的照片');addPhotos.type='button';const picker=document.createElement('input');picker.type='file';picker.accept='image/jpeg,image/png,image/webp';picker.multiple=true;picker.hidden=true;const personalStatus=textEl('small','最多 12 张，单张不超过 8 MB · 点个人照片右上角 × 删除 · 仅保存在当前浏览器');personalStatus.setAttribute('role','status');personalTools.append(addPhotos,picker,personalStatus);
+  const lightbox=textEl('div','','memory-lightbox');lightbox.hidden=true;lightbox.setAttribute('role','dialog');lightbox.setAttribute('aria-modal','true');const figure=document.createElement('figure');const lightboxClose=textEl('button','×','memory-lightbox-close');lightboxClose.type='button';lightboxClose.setAttribute('aria-label','关闭大图');const big=document.createElement('img');big.alt='';const caption=document.createElement('figcaption');figure.append(lightboxClose,big,caption);lightbox.append(figure);
+  frame.append(ambience,header,viewport,personalTools,help,controls,lightbox);dialog.append(frame);document.body.append(dialog);
+  const anchor=document.querySelector('.omikuji-shell')||document.querySelector('.leisure')||document.querySelector('.terms-preview');anchor.after(shell);
+  let personalMemories=[],personalUrls=[],memoryDatabase=null,WORLD_HEIGHT=2020;
+  function renderDrop(item,spot,index,personal=false){const [left,top,width,height,rotation]=spot;const card=textEl('div','',`memory-drop${personal?' memory-drop-personal':''}`);card.tabIndex=0;card.setAttribute('role','button');card.style.cssText=`left:${left}px;top:${top}px;width:${width}px;height:${height}px;--memory-r:${rotation}deg;--memory-z:${2+index%5}`;card.setAttribute('aria-label',`${item.title}：${item.caption}`);const image=document.createElement('img');image.src=item.src;image.alt=item.caption;image.loading='lazy';card.append(image,textEl('span',item.title));card.onclick=event=>{if(!event.target.closest('.memory-drop-remove'))openPhoto(item)};card.onkeydown=event=>{if((event.key==='Enter'||event.key===' ')&&!event.target.closest('.memory-drop-remove')){event.preventDefault();openPhoto(item)}};if(personal){const remove=textEl('button','×','memory-drop-remove');remove.type='button';remove.setAttribute('aria-label',`删除${item.title}`);remove.title='从回忆录中删除';remove.onclick=event=>{event.stopPropagation();removePersonalMemory(item.id)};card.append(remove)}world.append(card)}
+  memories.forEach((item,index)=>renderDrop(item,spots[index],index));
+  function personalSpot(index){const col=index%4,row=Math.floor(index/4);return[145+col*520,2140+row*345,310+(index%3)*18,225+(index%2)*28,[-4,3,-2,5][index%4]]}
+  function updatePersonalMemories(){personalUrls.forEach(url=>URL.revokeObjectURL(url));personalUrls=[];world.querySelectorAll('.memory-drop-personal,.memory-personal-label').forEach(node=>node.remove());if(personalMemories.length){const label=textEl('div','あなたの思い出 · 你的照片','memory-personal-label');label.style.cssText='left:150px;top:2055px';world.append(label)}personalMemories.forEach((record,index)=>{const src=URL.createObjectURL(record.blob);personalUrls.push(src);renderDrop({id:record.id,title:(record.name||`我的照片 ${index+1}`).replace(/\.[^.]+$/,''),caption:'你加入的回忆',src},personalSpot(index),30+index,true)});WORLD_HEIGHT=personalMemories.length?2220+Math.ceil(personalMemories.length/4)*345:2020;world.style.height=WORLD_HEIGHT+'px';count.textContent=`${30+personalMemories.length} 张`;summaryDetail.textContent=`思い出の雨 · 拖动浏览 ${30+personalMemories.length} 个片段`;if(dialog.open)paint()}
+  let x=0,y=0,scale=1,down=false,startX=0,startY=0,originX=0,originY=0,moved=false,dropCandidate=null,pointers=new Map(),pinchDistance=0,pinchScale=1;
+  function bounds(){const width=2200*scale,height=WORLD_HEIGHT*scale,viewWidth=viewport.clientWidth,viewHeight=viewport.clientHeight;x=Math.min(180,Math.max(viewWidth-width-180,x));y=Math.min(150,Math.max(viewHeight-height-150,y))}
+  function paint(){bounds();world.style.transform=`translate3d(${x}px,${y}px,0) scale(${scale})`;zoomValue.textContent=Math.round(scale*100)+'%'}
+  function zoomAt(next,cx=viewport.clientWidth/2,cy=viewport.clientHeight/2){next=Math.max(.38,Math.min(1.75,next));const rect=viewport.getBoundingClientRect(),localX=cx-rect.left,localY=cy-rect.top,worldX=(localX-x)/scale,worldY=(localY-y)/scale;x=localX-worldX*next;y=localY-worldY*next;scale=next;paint()}
+  function resetView(){const fit=Math.max(.42,Math.min(.82,(viewport.clientWidth-40)/2200,(viewport.clientHeight-40)/2020));scale=fit;x=(viewport.clientWidth-2200*scale)/2;y=(viewport.clientHeight-2020*scale)/2;paint()}
+  function openPhoto(item){if(moved)return;big.src=item.src;big.alt=item.caption;caption.textContent=`${item.title} · ${item.caption}`;lightbox.hidden=false;requestAnimationFrame(()=>lightbox.classList.add('is-visible'));lightboxClose.focus()}
+  function closePhoto(){lightbox.classList.remove('is-visible');setTimeout(()=>{lightbox.hidden=true;big.removeAttribute('src')},180)}
+  function openMemories(){if(!dialog.open)dialog.showModal();document.body.classList.add('memory-modal-open');setTimeout(()=>{resetView();viewport.focus()},60)}
+  function closeMemories(){if(!lightbox.hidden){closePhoto();return}if(dialog.open)dialog.close()}
+  function openMemoryDatabase(){return new Promise((resolve,reject)=>{try{const request=indexedDB.open('takagi-personal-memories',1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('photos'))request.result.createObjectStore('photos',{keyPath:'id'})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)}catch(error){reject(error)}})}
+  function memoryStore(mode='readonly'){return memoryDatabase.transaction('photos',mode).objectStore('photos')}
+  function readPersonalMemories(){return new Promise((resolve,reject)=>{const request=memoryStore().getAll();request.onsuccess=()=>resolve(request.result||[]);request.onerror=()=>reject(request.error)})}
+  function savePersonalMemory(record){return new Promise((resolve,reject)=>{const request=memoryStore('readwrite').put(record);request.onsuccess=resolve;request.onerror=()=>reject(request.error)})}
+  function deletePersonalMemory(id){return new Promise((resolve,reject)=>{const request=memoryStore('readwrite').delete(id);request.onsuccess=resolve;request.onerror=()=>reject(request.error)})}
+  async function removePersonalMemory(id){const record=personalMemories.find(item=>item.id===id);personalMemories=personalMemories.filter(item=>item.id!==id);updatePersonalMemories();try{if(memoryDatabase)await deletePersonalMemory(id);personalStatus.textContent=`已删除${record?.name||'这张照片'}。其余照片仍保存在当前浏览器。`}catch{personalStatus.textContent='画面已删除，浏览器未能保存此次操作。'}}
+  addPhotos.onclick=()=>picker.click();
+  picker.onchange=async()=>{const picked=Array.from(picker.files||[]);picker.value='';if(!picked.length)return;const room=Math.max(0,12-personalMemories.length),accepted=[];let rejected=0;for(const file of picked.slice(0,room)){if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){rejected++;continue}accepted.push({id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,name:file.name,blob:file,createdAt:Date.now()})}if(!accepted.length){personalStatus.textContent=room?'没有可加入的图片。请选择单张不超过 8 MB 的 JPG、PNG 或 WebP。':'最多保留 12 张个人照片。';return}personalMemories.push(...accepted);updatePersonalMemories();let saved=0;if(memoryDatabase){for(const record of accepted){try{await savePersonalMemory(record);saved++}catch{}}}personalStatus.textContent=`已加入 ${accepted.length} 张，向下拖动即可看到。${memoryDatabase&&saved===accepted.length?' 已保存在当前浏览器。':' 刷新后可能无法保留。'}${rejected||picked.length>room?' 部分图片因格式、大小或数量限制未加入。':''}`};
+  summary.onclick=openMemories;close.onclick=closeMemories;const nav=document.querySelector('#memories-open');if(nav)nav.onclick=openMemories;
+  zoomIn.onclick=()=>zoomAt(scale*1.18);zoomOut.onclick=()=>zoomAt(scale/1.18);reset.onclick=resetView;
+  viewport.addEventListener('wheel',event=>{event.preventDefault();zoomAt(scale*(event.deltaY>0?.9:1.1),event.clientX,event.clientY)},{passive:false});
+  viewport.onpointerdown=event=>{pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});moved=false;if(pointers.size===1){dropCandidate=event.target.closest?.('.memory-drop')||null;if(!dropCandidate)viewport.setPointerCapture(event.pointerId);down=true;startX=event.clientX;startY=event.clientY;originX=x;originY=y}else if(pointers.size===2){dropCandidate=null;viewport.setPointerCapture(event.pointerId);const values=[...pointers.values()];pinchDistance=Math.hypot(values[0].x-values[1].x,values[0].y-values[1].y);pinchScale=scale}viewport.classList.add('is-dragging')};
+  viewport.onpointermove=event=>{if(!pointers.has(event.pointerId))return;pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});if(pointers.size===2){moved=true;const values=[...pointers.values()],distance=Math.hypot(values[0].x-values[1].x,values[0].y-values[1].y),centerX=(values[0].x+values[1].x)/2,centerY=(values[0].y+values[1].y)/2;zoomAt(pinchScale*distance/pinchDistance,centerX,centerY)}else if(down){const dx=event.clientX-startX,dy=event.clientY-startY;if(Math.hypot(dx,dy)>6){moved=true;if(dropCandidate){viewport.setPointerCapture(event.pointerId);dropCandidate=null}}x=originX+dx;y=originY+dy;paint()}};
+  viewport.onpointerup=viewport.onpointercancel=event=>{pointers.delete(event.pointerId);if(!pointers.size){down=false;dropCandidate=null;viewport.classList.remove('is-dragging')}else if(pointers.size===1){const remaining=[...pointers.values()][0];startX=remaining.x;startY=remaining.y;originX=x;originY=y}};
+  lightbox.onclick=event=>{if(event.target===lightbox)closePhoto()};lightboxClose.onclick=closePhoto;dialog.addEventListener('click',event=>{if(event.target===dialog)closeMemories()});dialog.addEventListener('cancel',event=>{event.preventDefault();closeMemories()});dialog.addEventListener('close',()=>document.body.classList.remove('memory-modal-open'));
+  window.addEventListener('resize',()=>{if(dialog.open)resetView()});
+  openMemoryDatabase().then(async db=>{memoryDatabase=db;personalMemories=(await readPersonalMemories()).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).slice(0,12);updatePersonalMemories()}).catch(()=>{personalStatus.textContent='此浏览器无法长期保存照片，本次打开期间仍可使用。'});
+})();
+
