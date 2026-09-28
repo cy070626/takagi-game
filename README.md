@@ -30,6 +30,7 @@
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | DeepSeek 官方 API Key | 是 |
 | `QWEN_API_KEY` | 阿里云百炼千问 API Key | 是 |
+| `QWEN_BASE_URL` | 千问指定地域或业务空间的 compatible-mode/v1 地址 | 否 |
 | `ADMIN_PASSWORD` | 访问者使用 AI 对话时输入的密码 | 是 |
 
 修改访问密码时，只需更新 Netlify 后台的 `ADMIN_PASSWORD` 并重新部署。代码和 GitHub 仓库中不保存真实密码。

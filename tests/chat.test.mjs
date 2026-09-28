@@ -110,7 +110,7 @@ test("三个新增在线引擎都使用各自模型与同一份系统提示词",
 
   assert.equal(calls[0].body.model, "qwen3.8-flash");
   assert.equal(calls[0].body.enable_search, true);
-  assert.equal(calls[1].body.model, "deepseek-v4-pro-0813");
+  assert.equal(calls[1].body.model, "deepseek-v4-pro");
   assert.equal(calls[1].body.enable_search, undefined);
   assert.equal(calls[0].body.messages[0].content, calls[1].body.messages[0].content);
 });
@@ -127,6 +127,7 @@ test("上游 Key 失效时返回具体原因和更换引擎提醒", async () => 
   assert.equal(failure.code, "ENGINE_KEY_INVALID");
   assert.match(failure.error, /千问 3\.8 Max Key 无效/);
   assert.match(failure.reminder, /更换其他引擎/);
+  assert.deepEqual(failure.details, { message: "invalid api key", status: 401 });
 });
 
 test("未提供语气参数时使用轻松同桌和平静", async () => {

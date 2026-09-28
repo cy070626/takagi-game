@@ -6,7 +6,10 @@ const ENGINE_CONFIG = Object.freeze({
     id: "qwen-max",
     name: "千问 3.8 Max",
     model: "qwen3.8-max",
-    endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    endpoints: [
+      "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+    ],
     apiKeyEnv: "QWEN_API_KEY",
     provider: "qwen",
   },
@@ -14,15 +17,18 @@ const ENGINE_CONFIG = Object.freeze({
     id: "qwen-flash",
     name: "千问 3.8 Flash",
     model: "qwen3.8-flash",
-    endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+    endpoints: [
+      "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+    ],
     apiKeyEnv: "QWEN_API_KEY",
     provider: "qwen",
   },
   "deepseek-pro": {
     id: "deepseek-pro",
     name: "DeepSeek Pro",
-    model: "deepseek-v4-pro-0813",
-    endpoint: "https://api.deepseek.com/chat/completions",
+    model: "deepseek-v4-pro",
+    endpoints: ["https://api.deepseek.com/chat/completions"],
     apiKeyEnv: "DEEPSEEK_API_KEY",
     provider: "deepseek",
   },
@@ -30,7 +36,7 @@ const ENGINE_CONFIG = Object.freeze({
     id: "deepseek-flash",
     name: "DeepSeek Flash",
     model: "deepseek-v4-flash",
-    endpoint: "https://api.deepseek.com/chat/completions",
+    endpoints: ["https://api.deepseek.com/chat/completions"],
     apiKeyEnv: "DEEPSEEK_API_KEY",
     provider: "deepseek",
   },
@@ -296,6 +302,20 @@ function selectEngine(value) {
   return ENGINE_CONFIG[cleanText(value, 40)] || ENGINE_CONFIG[DEFAULT_ENGINE];
 }
 
+function normalizeChatEndpoint(value) {
+  const endpoint = cleanText(value, 400).replace(/\/+$/, "");
+  if (!endpoint || !/^https:\/\//i.test(endpoint)) return "";
+  return /\/chat\/completions$/i.test(endpoint) ? endpoint : `${endpoint}/chat/completions`;
+}
+
+function engineEndpoints(engine) {
+  if (engine.provider === "qwen") {
+    const configured = normalizeChatEndpoint(process.env.QWEN_BASE_URL);
+    if (configured) return [configured];
+  }
+  return engine.endpoints;
+}
+
 function engineError(engine, status, detail = "") {
   const normalized = cleanText(detail, 400);
   const reminder = "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。";
@@ -345,6 +365,17 @@ export default async function handler(request) {
   } catch {
     return json(400, { error: "请求 JSON 无效" });
   }
+
+  console.log("收到请求", {
+    requestId: cleanText(request.headers.get("x-nf-request-id"), 100),
+    modelPreference: cleanText(body?.modelPreference, 40) || DEFAULT_ENGINE,
+    mode: cleanText(body?.mode, 20) || "daily",
+    scene: cleanText(body?.scene, 50),
+    messageLength: typeof body?.message === "string" ? body.message.length : 0,
+    hasImage: typeof body?.image === "string" && body.image.startsWith("data:image/"),
+    historyItems: Array.isArray(body?.history) ? Math.min(body.history.length, MAX_HISTORY_ITEMS) : 0,
+    passwordProvided: typeof body?.password === "string" && body.password.length > 0,
+  });
 
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {
@@ -412,21 +443,59 @@ export default async function handler(request) {
     if (engine.provider === "qwen") requestBody.enable_search = true;
     if (engine.provider === "deepseek") requestBody.thinking = { type: "disabled" };
 
-    const upstream = await fetch(engine.endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal,
-    });
+    const endpoints = engineEndpoints(engine);
+    let upstream;
+    let fallbackResponse;
+    let lastNetworkError;
+    for (let index = 0; index < endpoints.length; index += 1) {
+      try {
+        const candidate = await fetch(endpoints[index], {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        const canTryNextRegion = engine.provider === "qwen"
+          && index < endpoints.length - 1
+          && [401, 403, 404].includes(candidate.status);
+        if (canTryNextRegion) {
+          fallbackResponse ||= candidate;
+          continue;
+        }
+        upstream = candidate;
+        break;
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        lastNetworkError = error;
+      }
+    }
+    upstream ||= fallbackResponse;
+    if (!upstream) throw lastNetworkError || new Error("ENGINE_NETWORK_ERROR");
 
     if (!upstream.ok) {
       const failureBody = await upstream.json().catch(() => ({}));
       const detail = failureBody?.error?.message || failureBody?.message || failureBody?.error || "";
-      const failure = engineError(engine, upstream.status, detail);
-      return json(failure.status, { ...failure, engine: engine.id, engineName: engine.name });
+      const upstreamMessage = cleanText(
+        typeof detail === "string" ? detail : JSON.stringify(detail),
+        500,
+      ) || `上游返回 HTTP ${upstream.status}`;
+      const failure = engineError(engine, upstream.status, upstreamMessage);
+      console.error("AI 上游调用失败", {
+        engine: engine.id,
+        engineName: engine.name,
+        model: engine.model,
+        status: upstream.status,
+        message: upstreamMessage,
+      });
+      return json(failure.status, {
+        ...failure,
+        engine: engine.id,
+        engineName: engine.name,
+        details: { message: upstreamMessage, status: upstream.status },
+      });
     }
 
     const result = await upstream.json();
@@ -439,20 +508,39 @@ export default async function handler(request) {
     });
   } catch (error) {
     if (error?.name === "AbortError") {
+      console.error("AI 调用超时", {
+        engine: engine.id,
+        engineName: engine.name,
+        model: engine.model,
+        status: 504,
+        message: error.message || "AbortError",
+      });
       return json(504, {
         error: `${engine.name} 网络超时`,
         code: "ENGINE_TIMEOUT",
         engine: engine.id,
         engineName: engine.name,
         reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
+        details: { message: error.message || "请求超过等待时间", status: 504 },
       });
     }
+    const networkCode = cleanText(error?.cause?.code, 60);
+    const networkMessage = cleanText(error?.message, 500) || "fetch failed";
+    console.error("AI 网络请求失败", {
+      engine: engine.id,
+      engineName: engine.name,
+      model: engine.model,
+      status: 0,
+      message: networkMessage,
+      networkCode,
+    });
     return json(502, {
-      error: `连接 ${engine.name} 时发生网络错误`,
+      error: `连接 ${engine.name} 时发生网络错误${networkCode ? `（${networkCode}）` : ""}`,
       code: "ENGINE_NETWORK_ERROR",
       engine: engine.id,
       engineName: engine.name,
       reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
+      details: { message: networkMessage, status: 0, networkCode },
     });
   } finally {
     clearTimeout(timeout);
