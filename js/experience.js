@@ -118,7 +118,7 @@ function saveSessionHistory(){try{sessionStorage.setItem('takagi-chat-session',J
 function rememberTurn(userText,assistantText){aiHistory.push({role:'user',text:String(userText||'').slice(0,800)},{role:'assistant',text:String(assistantText||'').slice(0,800)});aiHistory.splice(0,Math.max(0,aiHistory.length-CHAT_CONTEXT_LIMIT));saveSessionHistory()}
 const aiHistory=readSessionHistory();
 if(aiHistory.length)addContext(`已接上本次标签页里的短期对话记忆，共 ${aiHistory.length} 条。关闭标签页后会清除。`);
-let pendingImage=null,voiceRecorder=null,voiceStream=null,voiceChunks=[],voiceBase='',voiceState='idle',voiceTimer=null,voiceStartedAt=0,voiceFallback=null,voiceFallbackText='',voiceFallbackError='';
+let pendingImage=null,voiceRecorder=null,voiceStream=null,voiceChunks=[],voiceBase='',voiceState='idle',voiceTimer=null,voiceStartedAt=0,voiceFallback=null,voiceFallbackText='',voiceFallbackError='',voiceRecognitionOnly=false;
 const chatForm=$('#chat-form'),inputBottom=chatForm.querySelector('.input-bottom'),inputHint=inputBottom.querySelector('span');
 const passwordInput=$('#ai-password'),passwordStatus=$('#password-status'),forgetPassword=$('#forget-ai-password');
 try{passwordInput.value=sessionStorage.getItem('takagi-ai-password')||''}catch{}
@@ -147,6 +147,18 @@ chatForm.addEventListener('dragover',event=>{if(Array.from(event.dataTransfer?.t
 input.addEventListener('paste',event=>{const file=Array.from(event.clipboardData?.files||[]).find(item=>item.type.startsWith('image/'));if(file){event.preventDefault();prepareImage(file)}});
 function paintVoice(state,message){voiceState=state;voiceStatus.dataset.state=state;voiceStatus.textContent=message;voiceButton.setAttribute('aria-pressed',String(state==='listening'));voiceButton.textContent=state==='listening'?'■ 停止并转文字':state==='requesting'?'◌ 等待麦克风…':state==='converting'?'◌ 云端转写中…':state==='unsupported'?'语音暂不可用':'◉ 开始听';voiceButton.setAttribute('aria-label',state==='listening'?'停止录音并转换成文字':state==='unsupported'?'语音转写当前不可用':'开始语音输入');syncComposer()}
 function releaseVoiceStream(){if(voiceStream){voiceStream.getTracks().forEach(track=>track.stop());voiceStream=null}window.dispatchEvent(new CustomEvent('takagi:voice-recording',{detail:{active:false}}))}
+function writeBrowserSpeech(words){const text=String(words||'').trim();if(!text)return false;input.value=[voiceBase,text].filter(Boolean).join(voiceBase?' ':'');input.dispatchEvent(new Event('input',{bubbles:true}));return true}
+function startBrowserSpeech(){
+ const SpeechInput=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SpeechInput)return false;
+ voiceBase=input.value.trim();voiceFallbackText='';voiceFallbackError='';voiceRecognitionOnly=true;paintVoice('requesting','正在启动浏览器语音识别…');
+ try{voiceFallback=new SpeechInput();voiceFallback.lang='zh-CN';voiceFallback.interimResults=true;voiceFallback.continuous=true;voiceFallback.maxAlternatives=1;
+  voiceFallback.onstart=()=>{voiceStartedAt=Date.now();paintVoice('listening','正在听你说。说完后点“停止并转文字”。');$('#presence-label').textContent='她在听你说';window.dispatchEvent(new CustomEvent('takagi:voice-recording',{detail:{active:true}}));voiceTimer=setInterval(()=>{const elapsed=Math.floor((Date.now()-voiceStartedAt)/1000),minutes=String(Math.floor(elapsed/60)).padStart(2,'0'),seconds=String(elapsed%60).padStart(2,'0');voiceStatus.textContent=`正在听你说 ${minutes}:${seconds}。说完后点“停止并转文字”。`;if(elapsed>=90)stopVoice()},1000)};
+  voiceFallback.onresult=event=>{let words='';for(let i=0;i<event.results.length;i++)words+=event.results[i][0]?.transcript||'';voiceFallbackText=words.trim();if(writeBrowserSpeech(voiceFallbackText))voiceStatus.textContent='正在识别并写入输入框。说完后点“停止并转文字”。'};
+  voiceFallback.onerror=event=>{voiceFallbackError=event.error||'unavailable'};
+  voiceFallback.onend=()=>{clearInterval(voiceTimer);releaseVoiceStream();const words=voiceFallbackText;const error=voiceFallbackError;voiceFallback=null;voiceRecognitionOnly=false;$('#presence-label').textContent='她在听';if(writeBrowserSpeech(words)){paintVoice('done','已使用浏览器语音识别写入输入框。请确认内容，再点击发送。');input.focus();input.setSelectionRange(input.value.length,input.value.length)}else if(error==='not-allowed'||error==='service-not-allowed'){paintVoice('error','麦克风权限未开放。请在地址栏允许麦克风后，再点一次“开始听”。')}else if(error==='network'){paintVoice('error','浏览器语音识别需要网络连接。请检查网络后再试。')}else{paintVoice('error','这次没有听清。请靠近麦克风再试一次，也可以直接输入文字。')}syncComposer()};
+  voiceFallback.start();return true
+ }catch{voiceFallback=null;voiceRecognitionOnly=false;paintVoice('error','浏览器语音识别未能启动。请刷新页面后再试。');return true}
+}
 function startBrowserSpeechFallback(){
  const SpeechInput=window.SpeechRecognition||window.webkitSpeechRecognition;voiceFallbackText='';voiceFallbackError='';if(!SpeechInput)return;
  try{voiceFallback=new SpeechInput();voiceFallback.lang='zh-CN';voiceFallback.interimResults=true;voiceFallback.continuous=true;voiceFallback.onresult=event=>{let words='';for(let i=0;i<event.results.length;i++)words+=event.results[i][0]?.transcript||'';voiceFallbackText=words.trim()};voiceFallback.onerror=event=>{voiceFallbackError=event.error||'unavailable'};voiceFallback.start()}catch{voiceFallback=null}
@@ -158,8 +170,9 @@ async function transcribeVoice(blob){
  try{response=await fetch('/api/transcribe',{method:'POST',body:form,signal:controller.signal})}catch{throw Error('云端转写连接失败，请稍后重试。')}finally{clearTimeout(timeout)}
  const data=await response.json().catch(()=>({}));if(!response.ok||!data.text)throw Error(data.error||'云端转写暂时不可用。');return String(data.text).trim()
 }
-function stopVoice(){if(voiceRecorder&&voiceRecorder.state==='recording'){paintVoice('converting','录音已停止，正在通过云端转成文字…');voiceRecorder.stop()}}
+function stopVoice(){if(voiceRecognitionOnly&&voiceFallback){paintVoice('converting','正在整理识别到的文字…');voiceFallback.stop();return}if(voiceRecorder&&voiceRecorder.state==='recording'){paintVoice('converting','录音已停止，正在通过云端转成文字…');voiceRecorder.stop()}}
 async function startVoice(){
+ if(startBrowserSpeech())return;
  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){paintVoice('unsupported','当前浏览器无法录音。请使用 Chrome、Edge 或 Safari，并在地址栏允许麦克风。');voiceButton.dataset.supported='false';return}
  voiceBase=input.value.trim();voiceChunks=[];voiceFallbackText='';voiceFallbackError='';
  paintVoice('requesting','正在等待麦克风权限…');
@@ -170,10 +183,10 @@ async function startVoice(){
  voiceRecorder.onerror=()=>{clearInterval(voiceTimer);stopBrowserSpeechFallback();releaseVoiceStream();paintVoice('error','录音没有完成，请重新开始。')};
  voiceRecorder.onstop=async()=>{clearInterval(voiceTimer);const blob=new Blob(voiceChunks,{type:voiceRecorder.mimeType||voiceChunks[0]?.type||'audio/webm'});stopBrowserSpeechFallback();releaseVoiceStream();$('#presence-label').textContent='她在听';if(!blob.size){paintVoice('error','没有录到声音，请重新开始。');return}try{const words=await transcribeVoice(blob);input.value=[voiceBase,words].filter(Boolean).join(voiceBase?' ':'');paintVoice('done','已由云端转成文字并写入输入框。请确认内容，再点击发送。');input.focus();input.setSelectionRange(input.value.length,input.value.length)}catch(error){if(voiceFallbackText){input.value=[voiceBase,voiceFallbackText].filter(Boolean).join(voiceBase?' ':'');paintVoice('done','云端转写暂不可用，已使用浏览器识别并写入输入框。请确认后发送。');input.focus();input.setSelectionRange(input.value.length,input.value.length)}else{const hint=voiceFallbackError?'当前浏览器也未能完成备用识别。':'当前浏览器没有可用的备用识别。';paintVoice('error',`${error.message||'云端转写暂时不可用。'} ${hint}请在 Chrome、Edge 或 Safari 打开本站；Codex 的 Quick Annotate 只会发送到 Codex。`)}}syncComposer()};
  voiceRecorder.start(500);startBrowserSpeechFallback();voiceStartedAt=Date.now();paintVoice('listening','正在录音 00:00。说完后点“停止并转文字”。');$('#presence-label').textContent='她在听你说';window.dispatchEvent(new CustomEvent('takagi:voice-recording',{detail:{active:true}}));
- voiceTimer=setInterval(()=>{const elapsed=Math.floor((Date.now()-voiceStartedAt)/1000),seconds=String(elapsed%60).padStart(2,'0');voiceStatus.textContent=`正在录音 00:${seconds}。说完后点“停止并转文字”。`;if(elapsed>=45)stopVoice()},500)
+ voiceTimer=setInterval(()=>{const elapsed=Math.floor((Date.now()-voiceStartedAt)/1000),seconds=String(elapsed%60).padStart(2,'0');voiceStatus.textContent=`正在录音 00:${seconds}。说完后点“停止并转文字”。`;if(elapsed>=45)stopVoice()},1000)
 }
-voiceButton.dataset.supported=navigator.mediaDevices?.getUserMedia&&window.MediaRecorder?'true':'false';
-if(voiceButton.dataset.supported==='false'){inputHint.textContent='可输入、粘贴或拖入图片';paintVoice('unsupported','当前浏览器无法录音。请使用 Chrome、Edge 或 Safari，并允许麦克风。')}
+voiceButton.dataset.supported=window.SpeechRecognition||window.webkitSpeechRecognition||navigator.mediaDevices?.getUserMedia&&window.MediaRecorder?'true':'false';
+if(voiceButton.dataset.supported==='false'){inputHint.textContent='可输入、粘贴或拖入图片';paintVoice('unsupported','当前浏览器没有可用的语音识别。请使用 Chrome、Edge 或 Safari，并允许麦克风。')}
 voiceButton.onclick=()=>voiceState==='listening'?stopVoice():startVoice();
 window.addEventListener('pagehide',()=>{clearInterval(voiceTimer);stopBrowserSpeechFallback();if(voiceRecorder?.state==='recording')voiceRecorder.stop();releaseVoiceStream()});
 async function requestAI(message,image){
