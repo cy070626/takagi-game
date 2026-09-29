@@ -53,6 +53,8 @@ test("正确密码才调用 DeepSeek，并传入短期上下文", async () => {
   assert.equal((await response.json()).text, "放学后见。");
   assert.equal(outbound.model, "deepseek-v4-flash");
   assert.equal(outbound.temperature, 1.18);
+  assert.equal(outbound.response_format, undefined);
+  assert.equal(outbound.reasoning_effort, "none");
   assert.match(outbound.messages[0].content, /最高优先级语气指令/);
   assert.match(outbound.messages[0].content, /俏皮观察/);
   assert.match(outbound.messages[0].content, /心情不错/);
@@ -110,9 +112,61 @@ test("三个新增在线引擎都使用各自模型与同一份系统提示词",
 
   assert.equal(calls[0].body.model, "qwen3.8-flash");
   assert.equal(calls[0].body.enable_search, true);
+  assert.deepEqual(calls[0].body.response_format, { type: "json_object" });
   assert.equal(calls[1].body.model, "deepseek-v4-pro");
   assert.equal(calls[1].body.enable_search, undefined);
+  assert.equal(calls[1].body.response_format, undefined);
+  assert.equal(calls[1].body.reasoning_effort, "none");
   assert.equal(calls[0].body.messages[0].content, calls[1].body.messages[0].content);
+});
+
+test("千问账户状态异常时返回准确原因", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "test-qwen-api-key";
+  globalThis.fetch = async () => Response.json({
+    error: { message: "Access denied, please make sure your account is in good standing." },
+  }, { status: 400 });
+
+  const response = await handler(request({ message: "你好", password: "configured-secret", modelPreference: "qwen-max" }));
+  const failure = await response.json();
+
+  assert.equal(response.status, 402);
+  assert.equal(failure.code, "ENGINE_ACCOUNT_UNAVAILABLE");
+  assert.match(failure.error, /账户状态异常或存在欠费/);
+  assert.equal(failure.details.status, 400);
+});
+
+test("DeepSeek 空正文会被识别为模型空回复", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.DEEPSEEK_API_KEY = "test-deepseek-api-key";
+  globalThis.fetch = async () => Response.json({
+    choices: [{ finish_reason: "stop", message: { content: "", reasoning_content: "内部推理" } }],
+  });
+
+  const response = await handler(request({ message: "再说一句", password: "configured-secret", modelPreference: "deepseek-pro" }));
+  const failure = await response.json();
+
+  assert.equal(response.status, 502);
+  assert.equal(failure.code, "ENGINE_EMPTY_REPLY");
+  assert.match(failure.error, /空内容/);
+  assert.deepEqual(failure.details, { message: "EMPTY_MODEL_REPLY; finish_reason=stop", status: 200 });
+});
+
+test("QWEN_BASE_URL 使用业务空间专属地址", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "test-qwen-api-key";
+  process.env.QWEN_BASE_URL = "https://workspace-id.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
+  let calledUrl;
+  globalThis.fetch = async (url) => {
+    calledUrl = url;
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ text: "收到。" }) } }] });
+  };
+
+  const response = await handler(request({ message: "你好", password: "configured-secret", modelPreference: "qwen-max" }));
+  delete process.env.QWEN_BASE_URL;
+
+  assert.equal(response.status, 200);
+  assert.equal(calledUrl, "https://workspace-id.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions");
 });
 
 test("上游 Key 失效时返回具体原因和更换引擎提醒", async () => {

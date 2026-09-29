@@ -1,4 +1,4 @@
-# Takagi V62 Netlify DeepSeek
+# Takagi V68 Netlify 多引擎聊天
 
 这是一个可直接放入 GitHub 仓库根目录并由 Netlify 部署的静态网站。主入口是 `index.html`，DeepSeek 请求由 `netlify/functions/chat.js` 转发。
 
@@ -35,6 +35,22 @@
 
 修改访问密码时，只需更新 Netlify 后台的 `ADMIN_PASSWORD` 并重新部署。代码和 GitHub 仓库中不保存真实密码。
 
+千问新版业务空间建议填写 `QWEN_BASE_URL`。华北 2 区格式为：
+
+```text
+https://你的业务空间ID.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+```
+
+不要填写花括号，也不要把 API Key 写进地址。修改环境变量后必须触发一次新部署。
+
+## V68 接口排错
+
+1. DeepSeek 不再启用强制 JSON Output，避免官方已说明的偶发空正文问题。系统提示仍要求 JSON；服务端也兼容普通文本回复。
+2. DeepSeek 显式使用非思考模式。偶发空正文会返回 `ENGINE_EMPTY_REPLY`，不会再误报网络故障。
+3. 千问返回 `good standing`、`overdue` 或欠费信息时，页面会显示账户状态异常。此类错误需要在阿里云费用与成本页面处理。
+4. 千问返回 `Model.AccessDenied` 或权限信息时，需要确认 API Key 所属业务空间已获准调用对应模型。
+5. Netlify 日志会记录实际调用的域名、模型、HTTP 状态和经截断的上游错误，不记录密码、API Key、聊天原文或图片数据。
+
 ## 密码校验流程
 
 1. 浏览器把访问者输入的密码随聊天请求发送到 `/api/chat`。
@@ -68,7 +84,7 @@
 1. 把本目录的全部内容提交到 GitHub 仓库根目录。
 2. 在 Netlify 连接该仓库。
 3. Publish directory 保持 `.`。Functions directory 保持 `netlify/functions`。
-4. 配置两项环境变量后触发一次新部署。
+4. 配置所需环境变量后触发一次新部署。
 5. 打开站点，输入错误密码验证出现提示，再输入正确密码完成一轮对话。
 
 ## 不能删除或改名的文件

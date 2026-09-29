@@ -319,6 +319,12 @@ function engineEndpoints(engine) {
 function engineError(engine, status, detail = "") {
   const normalized = cleanText(detail, 400);
   const reminder = "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。";
+  if (/good standing|overdue|past due|欠费|账户.{0,8}(?:异常|停用|冻结)/i.test(normalized)) {
+    return { status: 402, code: "ENGINE_ACCOUNT_UNAVAILABLE", error: `${engine.name} 账户状态异常或存在欠费`, reminder };
+  }
+  if (/Model\.AccessDenied|workspace|permission|not authorized|无权|权限/i.test(normalized)) {
+    return { status: 403, code: "ENGINE_ACCESS_DENIED", error: `${engine.name} 当前 API Key 没有模型或业务空间权限`, reminder };
+  }
   if (status === 401 || status === 403) {
     return { status: 502, code: "ENGINE_KEY_INVALID", error: `${engine.name} Key 无效或没有模型访问权限`, reminder };
   }
@@ -435,20 +441,27 @@ export default async function handler(request) {
         ...history,
         { role: "user", content: userContent },
       ],
-      response_format: { type: "json_object" },
       temperature: resolveTemperature(profile, mode),
-      max_tokens: 700,
+      max_tokens: 900,
       stream: false,
     };
-    if (engine.provider === "qwen") requestBody.enable_search = true;
-    if (engine.provider === "deepseek") requestBody.thinking = { type: "disabled" };
+    if (engine.provider === "qwen") {
+      requestBody.enable_search = true;
+      requestBody.response_format = { type: "json_object" };
+    }
+    if (engine.provider === "deepseek") {
+      requestBody.thinking = { type: "disabled" };
+      requestBody.reasoning_effort = "none";
+    }
 
     const endpoints = engineEndpoints(engine);
     let upstream;
     let fallbackResponse;
     let lastNetworkError;
+    let usedEndpoint = endpoints[0];
     for (let index = 0; index < endpoints.length; index += 1) {
       try {
+        usedEndpoint = endpoints[index];
         const candidate = await fetch(endpoints[index], {
           method: "POST",
           headers: {
@@ -487,6 +500,7 @@ export default async function handler(request) {
         engine: engine.id,
         engineName: engine.name,
         model: engine.model,
+        endpoint: new URL(usedEndpoint).host,
         status: upstream.status,
         message: upstreamMessage,
       });
@@ -499,7 +513,28 @@ export default async function handler(request) {
     }
 
     const result = await upstream.json();
-    const reply = parseModelReply(result?.choices?.[0]?.message?.content);
+    const choice = result?.choices?.[0];
+    const content = choice?.message?.content;
+    if (!cleanText(content, 8_000)) {
+      const finishReason = cleanText(choice?.finish_reason, 60) || "unknown";
+      console.error("AI 返回空正文", {
+        engine: engine.id,
+        engineName: engine.name,
+        model: engine.model,
+        status: 200,
+        finishReason,
+        reasoningOnly: Boolean(choice?.message?.reasoning_content),
+      });
+      return json(502, {
+        error: `${engine.name} 本次返回了空内容，请重新发送一次`,
+        code: "ENGINE_EMPTY_REPLY",
+        engine: engine.id,
+        engineName: engine.name,
+        reminder: "这通常是模型偶发的空回复，重新发送即可；若连续出现，请更换其他引擎。",
+        details: { message: `EMPTY_MODEL_REPLY; finish_reason=${finishReason}`, status: 200 },
+      });
+    }
+    const reply = parseModelReply(content);
     return json(200, {
       ...humanizeReply(reply, { message, profile }),
       engine: engine.id,
