@@ -1,2 +1,3 @@
 /api/chat /.netlify/functions/chat 200
+/api/game /.netlify/functions/game 200
 /* /index.html 200

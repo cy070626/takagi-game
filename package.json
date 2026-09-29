@@ -1,10 +1,10 @@
 {
-  "name": "takagi-v62-netlify-deepseek",
+  "name": "takagi-v70-mobile-responsive",
   "private": true,
   "type": "module",
   "scripts": {
     "build:bundles": "node scripts/build-bundles.mjs",
-    "check": "npm run build:bundles && node --check netlify/functions/chat.js && node --check js/experience.js && node --check js/extras.js && node --check js/games-bundle.js && node --check js/sidebar-bundle.js",
+    "check": "npm run build:bundles && node --check netlify/functions/chat.js && node --check netlify/functions/game.js && node --check js/visit-memory.js && node --check js/experience.js && node --check js/extras.js && node --check js/games-bundle.js && node --check js/sidebar-bundle.js && node --check js/responsive.js",
     "test": "node --test \"tests/*.test.mjs\""
   }
 }

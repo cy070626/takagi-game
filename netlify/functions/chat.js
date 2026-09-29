@@ -44,7 +44,13 @@ const ENGINE_CONFIG = Object.freeze({
 const MAX_MESSAGE_LENGTH = 1200;
 const MAX_HISTORY_ITEMS = 12;
 const MAX_IMAGE_DATA_LENGTH = 1_900_000;
-const REQUEST_TIMEOUT_MS = 25_000;
+const REQUEST_TIMEOUT_MS = 10_000;
+const FALLBACK_ORDERS = Object.freeze({
+  "qwen-max": ["qwen-max", "qwen-flash", "deepseek-pro", "deepseek-flash"],
+  "qwen-flash": ["qwen-flash", "qwen-max", "deepseek-pro", "deepseek-flash"],
+  "deepseek-pro": ["deepseek-pro", "deepseek-flash", "qwen-max", "qwen-flash"],
+  "deepseek-flash": ["deepseek-flash", "deepseek-pro", "qwen-max", "qwen-flash"],
+});
 
 const ALLOWED_MODES = new Set(["daily", "study"]);
 const ALLOWED_MOODS = new Set(["warm", "playful", "quiet", "listening"]);
@@ -112,6 +118,10 @@ function cleanTopicContext(value) {
     .filter(Boolean)
     .join("\n")
     .slice(0, 600);
+}
+
+function cleanVisitContext(value) {
+  return cleanText(value, 1_600).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
 }
 
 function passwordMatches(input, expected) {
@@ -242,7 +252,7 @@ const CORE_CHARACTER_DIRECTIVE = `你是高木同学，也是玩家熟悉的同�
 
 每次回复先抓住玩家刚说的内容，给出真实反应或明确态度，再自然地往下说。玩家突然换话题时就跟着换，不审问转场原因，也不把聊天变成资料收集。关系感来自记得前文、注意小细节和适度表达自己的看法。`;
 
-function buildSystemPrompt({ mode, scene, profile, topicContext }) {
+function buildSystemPrompt({ mode, scene, profile, topicContext, visitContext }) {
   const styleRule = CHAT_STYLE_RULES[profile.chatStyle] || CHAT_STYLE_RULES.gentle;
   const moodRule = MOOD_RULES[profile.currentMood] || MOOD_RULES.calm;
   return `${CORE_CHARACTER_DIRECTIVE}
@@ -286,6 +296,10 @@ function buildSystemPrompt({ mode, scene, profile, topicContext }) {
 希望获得：${profile.needs.join("、") || "轻松陪伴"}
 当前词条与话题素材：
 ${topicContext || "无。只沿着玩家本轮消息和最近对话继续。"}
+
+本次访问的连续体验记录：
+${visitContext || "暂无记录。"}
+把这些记录当作同一次校园经历中的轻量线索。只在自然相关时承接，不逐条复述，也不声称拥有跨设备或长期记忆。
 
 内容规则：
 1. 日常聊天先表达态度，再补充最多两句理由。捉弄感来自观察具体细节，不靠固定口头禅。
@@ -338,6 +352,141 @@ function engineError(engine, status, detail = "") {
     return { status: 502, code: "ENGINE_MODEL_UNAVAILABLE", error: `${engine.name} 模型不可用或请求参数不兼容`, reminder };
   }
   return { status: 502, code: "ENGINE_UNAVAILABLE", error: `${engine.name} 服务暂时不可用`, reminder };
+}
+
+function engineSequence(preference, allowFallback) {
+  const primary = selectEngine(preference);
+  const ids = allowFallback === false ? [primary.id] : FALLBACK_ORDERS[primary.id];
+  return ids.map((id) => ENGINE_CONFIG[id]);
+}
+
+async function callEngine(engine, requestBody) {
+  const apiKey = process.env[engine.apiKeyEnv];
+  if (!apiKey) {
+    return {
+      ok: false,
+      failure: {
+        engine: engine.id,
+        engineName: engine.name,
+        code: "ENGINE_NOT_CONFIGURED",
+        status: 503,
+        message: `站点尚未配置 ${engine.apiKeyEnv}`,
+      },
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const endpoints = engineEndpoints(engine);
+  let fallbackResponse;
+  let lastNetworkError;
+  let usedEndpoint = endpoints[0];
+
+  try {
+    for (let index = 0; index < endpoints.length; index += 1) {
+      try {
+        usedEndpoint = endpoints[index];
+        const candidate = await fetch(usedEndpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+        const tryNextRegion = engine.provider === "qwen"
+          && index < endpoints.length - 1
+          && [401, 403, 404].includes(candidate.status);
+        if (tryNextRegion) {
+          fallbackResponse ||= candidate;
+          continue;
+        }
+        fallbackResponse = candidate;
+        break;
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        lastNetworkError = error;
+      }
+    }
+
+    const upstream = fallbackResponse;
+    if (!upstream) throw lastNetworkError || new Error("ENGINE_NETWORK_ERROR");
+    if (!upstream.ok) {
+      const failureBody = await upstream.json().catch(() => ({}));
+      const detail = failureBody?.error?.message || failureBody?.message || failureBody?.error || "";
+      const upstreamMessage = cleanText(
+        typeof detail === "string" ? detail : JSON.stringify(detail),
+        500,
+      ) || `上游返回 HTTP ${upstream.status}`;
+      const classified = engineError(engine, upstream.status, upstreamMessage);
+      console.error("AI 上游调用失败", {
+        engine: engine.id,
+        engineName: engine.name,
+        model: engine.model,
+        endpoint: new URL(usedEndpoint).host,
+        status: upstream.status,
+        message: upstreamMessage,
+      });
+      return {
+        ok: false,
+        failure: {
+          engine: engine.id,
+          engineName: engine.name,
+          code: classified.code,
+          status: upstream.status,
+          responseStatus: classified.status,
+          message: classified.error,
+          detail: upstreamMessage,
+        },
+      };
+    }
+
+    const result = await upstream.json();
+    const choice = result?.choices?.[0];
+    const content = choice?.message?.content;
+    if (!cleanText(content, 8_000)) {
+      const finishReason = cleanText(choice?.finish_reason, 60) || "unknown";
+      return {
+        ok: false,
+        failure: {
+          engine: engine.id,
+          engineName: engine.name,
+          code: "ENGINE_EMPTY_REPLY",
+          status: 502,
+          message: `${engine.name} 返回了空内容`,
+          detail: `finish_reason=${finishReason}`,
+        },
+      };
+    }
+    return { ok: true, content };
+  } catch (error) {
+    const timedOut = error?.name === "AbortError";
+    const networkCode = cleanText(error?.cause?.code, 60);
+    const networkMessage = cleanText(error?.message, 500) || "fetch failed";
+    console.error(timedOut ? "AI 调用超时" : "AI 网络请求失败", {
+      engine: engine.id,
+      engineName: engine.name,
+      model: engine.model,
+      status: timedOut ? 504 : 0,
+      message: networkMessage,
+      networkCode,
+    });
+    return {
+      ok: false,
+      failure: {
+        engine: engine.id,
+        engineName: engine.name,
+        code: timedOut ? "ENGINE_TIMEOUT" : "ENGINE_NETWORK_ERROR",
+        status: timedOut ? 504 : 0,
+        message: timedOut ? `${engine.name} 网络超时` : `连接 ${engine.name} 时发生网络错误`,
+        detail: networkMessage,
+        networkCode,
+      },
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export default async function handler(request) {
@@ -397,18 +546,6 @@ export default async function handler(request) {
     });
   }
 
-  const engine = selectEngine(body?.modelPreference);
-  const apiKey = process.env[engine.apiKeyEnv];
-  if (!apiKey) {
-    return json(503, {
-      error: `站点尚未配置 ${engine.name} 所需的 ${engine.apiKeyEnv}`,
-      code: "ENGINE_NOT_CONFIGURED",
-      engine: engine.id,
-      engineName: engine.name,
-      reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
-    });
-  }
-
   const message = cleanText(body?.message, MAX_MESSAGE_LENGTH);
   const image = cleanText(body?.image, MAX_IMAGE_DATA_LENGTH);
   if (!message && !image) {
@@ -422,6 +559,7 @@ export default async function handler(request) {
   const scene = cleanText(body?.scene, 50);
   const profile = cleanProfile(body?.profile);
   const topicContext = cleanTopicContext(body?.topicContext);
+  const visitContext = cleanVisitContext(body?.visitContext);
   const history = cleanHistory(body?.history);
   const userContent = image
     ? [
@@ -430,14 +568,13 @@ export default async function handler(request) {
       ]
     : message;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-  try {
+  const engines = engineSequence(body?.modelPreference, body?.allowFallback);
+  const failures = [];
+  for (const engine of engines) {
     const requestBody = {
       model: engine.model,
       messages: [
-        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext }) },
+        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext, visitContext }) },
         ...history,
         { role: "user", content: userContent },
       ],
@@ -453,131 +590,56 @@ export default async function handler(request) {
       requestBody.thinking = { type: "disabled" };
       requestBody.reasoning_effort = "none";
     }
-
-    const endpoints = engineEndpoints(engine);
-    let upstream;
-    let fallbackResponse;
-    let lastNetworkError;
-    let usedEndpoint = endpoints[0];
-    for (let index = 0; index < endpoints.length; index += 1) {
-      try {
-        usedEndpoint = endpoints[index];
-        const candidate = await fetch(endpoints[index], {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
-        const canTryNextRegion = engine.provider === "qwen"
-          && index < endpoints.length - 1
-          && [401, 403, 404].includes(candidate.status);
-        if (canTryNextRegion) {
-          fallbackResponse ||= candidate;
-          continue;
-        }
-        upstream = candidate;
-        break;
-      } catch (error) {
-        if (error?.name === "AbortError") throw error;
-        lastNetworkError = error;
-      }
-    }
-    upstream ||= fallbackResponse;
-    if (!upstream) throw lastNetworkError || new Error("ENGINE_NETWORK_ERROR");
-
-    if (!upstream.ok) {
-      const failureBody = await upstream.json().catch(() => ({}));
-      const detail = failureBody?.error?.message || failureBody?.message || failureBody?.error || "";
-      const upstreamMessage = cleanText(
-        typeof detail === "string" ? detail : JSON.stringify(detail),
-        500,
-      ) || `上游返回 HTTP ${upstream.status}`;
-      const failure = engineError(engine, upstream.status, upstreamMessage);
-      console.error("AI 上游调用失败", {
-        engine: engine.id,
-        engineName: engine.name,
-        model: engine.model,
-        endpoint: new URL(usedEndpoint).host,
-        status: upstream.status,
-        message: upstreamMessage,
-      });
-      return json(failure.status, {
-        ...failure,
-        engine: engine.id,
-        engineName: engine.name,
-        details: { message: upstreamMessage, status: upstream.status },
-      });
+    const outcome = await callEngine(engine, requestBody);
+    if (!outcome.ok) {
+      failures.push(outcome.failure);
+      continue;
     }
 
-    const result = await upstream.json();
-    const choice = result?.choices?.[0];
-    const content = choice?.message?.content;
-    if (!cleanText(content, 8_000)) {
-      const finishReason = cleanText(choice?.finish_reason, 60) || "unknown";
-      console.error("AI 返回空正文", {
+    try {
+      const reply = parseModelReply(outcome.content);
+      return json(200, {
+        ...humanizeReply(reply, { message, profile }),
         engine: engine.id,
         engineName: engine.name,
-        model: engine.model,
-        status: 200,
-        finishReason,
-        reasoningOnly: Boolean(choice?.message?.reasoning_content),
+        webSearchEnabled: engine.provider === "qwen",
+        fallbacks: failures,
       });
-      return json(502, {
-        error: `${engine.name} 本次返回了空内容，请重新发送一次`,
-        code: "ENGINE_EMPTY_REPLY",
+    } catch (error) {
+      failures.push({
         engine: engine.id,
         engineName: engine.name,
-        reminder: "这通常是模型偶发的空回复，重新发送即可；若连续出现，请更换其他引擎。",
-        details: { message: `EMPTY_MODEL_REPLY; finish_reason=${finishReason}`, status: 200 },
+        code: "ENGINE_INVALID_REPLY",
+        status: 502,
+        message: `${engine.name} 返回格式异常`,
+        detail: cleanText(error?.message, 200),
       });
     }
-    const reply = parseModelReply(content);
-    return json(200, {
-      ...humanizeReply(reply, { message, profile }),
-      engine: engine.id,
-      engineName: engine.name,
-      webSearchEnabled: engine.provider === "qwen",
-    });
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      console.error("AI 调用超时", {
-        engine: engine.id,
-        engineName: engine.name,
-        model: engine.model,
-        status: 504,
-        message: error.message || "AbortError",
-      });
-      return json(504, {
-        error: `${engine.name} 网络超时`,
-        code: "ENGINE_TIMEOUT",
-        engine: engine.id,
-        engineName: engine.name,
-        reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
-        details: { message: error.message || "请求超过等待时间", status: 504 },
-      });
-    }
-    const networkCode = cleanText(error?.cause?.code, 60);
-    const networkMessage = cleanText(error?.message, 500) || "fetch failed";
-    console.error("AI 网络请求失败", {
-      engine: engine.id,
-      engineName: engine.name,
-      model: engine.model,
-      status: 0,
-      message: networkMessage,
-      networkCode,
-    });
-    return json(502, {
-      error: `连接 ${engine.name} 时发生网络错误${networkCode ? `（${networkCode}）` : ""}`,
-      code: "ENGINE_NETWORK_ERROR",
-      engine: engine.id,
-      engineName: engine.name,
-      reminder: "当前引擎暂时不可用，请在个性设置的“对话引擎”中更换其他引擎再试。",
-      details: { message: networkMessage, status: 0, networkCode },
-    });
-  } finally {
-    clearTimeout(timeout);
   }
+
+  if (failures.length === 1 && body?.allowFallback === false) {
+    const failure = failures[0];
+    return json(failure.responseStatus || (failure.status >= 400 ? failure.status : 502), {
+      error: failure.message,
+      code: failure.code,
+      engine: failure.engine,
+      engineName: failure.engineName,
+      reminder: "当前引擎暂时不可用，请在个性设置中更换其他引擎再试。",
+      details: { message: failure.detail || failure.message, status: failure.status, ...(failure.networkCode ? { networkCode: failure.networkCode } : {}) },
+    });
+  }
+
+  const first = failures[0];
+  return json(502, {
+    error: "千问与 DeepSeek 当前均未能完成回复",
+    code: "ALL_ENGINES_FAILED",
+    engine: first?.engine || DEFAULT_ENGINE,
+    engineName: first?.engineName || ENGINE_CONFIG[DEFAULT_ENGINE].name,
+    reminder: "已按顺序尝试可用引擎。请稍后重试，或在个性设置中手动选择引擎。",
+    attempts: failures,
+    details: {
+      message: failures.map((item) => `${item.engineName}: ${item.message}`).join("；"),
+      status: failures.at(-1)?.status || 502,
+    },
+  });
 }

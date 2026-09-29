@@ -1,0 +1,95 @@
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+audio,
+video {
+  width: 100%;
+}
+
+button,
+a,
+input,
+select,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(95, 74, 62, .18);
+}
+
+@media (pointer: coarse) {
+  button,
+  a,
+  input:not([type="range"]),
+  select,
+  summary {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 650px) {
+  button,
+  a,
+  input:not([type="range"]),
+  select,
+  summary {
+    min-height: 44px;
+  }
+
+  button {
+    min-width: 44px;
+  }
+
+  .sheet,
+  .special,
+  .endScene {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  .sheet .card,
+  .special .card,
+  .endCard {
+    width: min(100%, 520px);
+    max-height: calc(100dvh - 20px);
+    padding: 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .tools button,
+  .roundBtn,
+  .hudSettings,
+  .newMatchBtn,
+  .envBtn,
+  .close,
+  .endActions button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .choices,
+  .modeChoices,
+  .rulesGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chatStage,
+  .panel,
+  .sheet .box,
+  .track-list,
+  .supplement-list {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}

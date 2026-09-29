@@ -135,7 +135,7 @@
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==theaterFrame?.contentWindow||event.data?.type!=='takagi-music-theater')return;
     const data=event.data;
-    if(data.sceneTitle){sceneName.textContent=data.sceneTitle;sceneTrack.textContent=`${data.trackTitle} · ${data.artist}`;sceneImage.src=data.thumb;save('takagi-music-title',data.sceneTitle);save('takagi-music-track-title',sceneTrack.textContent);save('takagi-music-thumb',data.thumb)}
+    if(data.sceneTitle){sceneName.textContent=data.sceneTitle;sceneTrack.textContent=`${data.trackTitle} · ${data.artist}`;sceneImage.src=data.thumb;save('takagi-music-title',data.sceneTitle);save('takagi-music-track-title',sceneTrack.textContent);save('takagi-music-thumb',data.thumb);globalThis.TakagiVisitMemory?.record('音乐',data.sceneTitle,sceneTrack.textContent)}
     if(data.action==='minimize')closeTheater(false);else if(data.action==='stop-close')closeTheater(true);
   });
   area.append(arcade,games,music);$('.interactions').after(area);

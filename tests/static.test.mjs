@@ -33,11 +33,34 @@ test("HTML、CSS 与 JavaScript 中的相对资源路径均存在", () => {
   assert.deepEqual(missing, []);
 });
 
-test("Netlify 聊天路由和入口文件存在", () => {
+test("Netlify AI 路由和入口文件存在", () => {
   assert.equal(existsSync(join(root, "index.html")), true);
   assert.equal(existsSync(join(root, "netlify", "functions", "chat.js")), true);
+  assert.equal(existsSync(join(root, "netlify", "functions", "game.js")), true);
   const redirects = readFileSync(join(root, "_redirects"), "utf8");
   assert.match(redirects, /^\/api\/chat\s+\/\.netlify\/functions\/chat\s+200/m);
+  assert.match(redirects, /^\/api\/game\s+\/\.netlify\/functions\/game\s+200/m);
+});
+
+test("V70 响应式入口与独立页面样式已接入", () => {
+  const index = readFileSync(join(root, "index.html"), "utf8");
+  const responsive = readFileSync(join(root, "css", "responsive.css"), "utf8");
+  const responsiveGames = readFileSync(join(root, "css", "responsive-games.css"), "utf8");
+  const eraser = readFileSync(join(root, "games", "eraser-duel.html"), "utf8");
+  const mind = readFileSync(join(root, "games", "mind-duel.html"), "utf8");
+  const theater = readFileSync(join(root, "pages", "music-theater.html"), "utf8");
+
+  assert.match(index, /viewport-fit=cover/);
+  assert.match(index, /id="nav-toggle"/);
+  assert.match(index, /id="site-nav"/);
+  assert.match(index, /css\/responsive\.css\?v=70/);
+  assert.match(index, /js\/responsive\.js\?v=70/);
+  assert.match(responsive, /@media \(max-width: 1024px\)/);
+  assert.match(responsive, /min-height: 44px/);
+  assert.match(responsiveGames, /@media \(max-width: 650px\)/);
+  assert.match(eraser, /responsive-games\.css\?v=70/);
+  assert.match(mind, /responsive-games\.css\?v=70/);
+  assert.match(theater, /responsive-games\.css\?v=70/);
 });
 
 test("橡皮对决使用低重绘动画路径", () => {
@@ -64,7 +87,10 @@ test("首屏场景与猜心对决使用轻量资源", () => {
   assert.doesNotMatch(mind, /data:image\//);
   assert.match(mind, /assets\/mind-duel-bg\.webp/);
   assert.match(extras, /IntersectionObserver/);
-  assert.match(extras, /games-bundle\.js\?v=62/);
+  assert.match(index, /visit-memory\.js\?v=69/);
+  assert.match(extras, /games-bundle\.js\?v=69/);
+  assert.match(extras, /sidebar-bundle\.js\?v=69/);
+  assert.doesNotMatch(experience, /\/api\/transcribe/);
   assert.doesNotMatch(extras, /supplement\.open=true/);
 });
 

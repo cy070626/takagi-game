@@ -1,13 +1,13 @@
-Takagi V62 完整文件清单
-生成时间：2026-09-28
-文件总数：177
+Takagi V70 完整文件清单
+生成时间：2026-09-29
+文件总数：186
 
-_redirects	58 bytes
-.env.example	35 bytes
+_redirects	97 bytes
+.env.example	167 bytes
 .gitignore	36 bytes
 .nvmrc	3 bytes
-上传说明.md	1829 bytes
-上传说明.txt	352 bytes
+上传说明.md	2606 bytes
+上传说明.txt	368 bytes
 assets-sha256.txt	14205 bytes
 assets/cafeteria.png	576386 bytes
 assets/cafeteria.webp	116566 bytes
@@ -150,32 +150,41 @@ assets/user-gallery-202609/b3-19.webp	31340 bytes
 assets/user-gallery-202609/b3-20.webp	21232 bytes
 css/continuity.css	1653 bytes
 css/music-theater.css	13576 bytes
+css/responsive-games.css	1346 bytes
+css/responsive.css	13946 bytes
 css/styles.css	104516 bytes
-games/eraser-duel.html	55311 bytes
-games/mind-duel.html	45941 bytes
-index.html	7079 bytes
-js/arcade-v2.js	48902 bytes
+games/eraser-duel.html	55376 bytes
+games/mind-duel.html	46006 bytes
+index.html	7561 bytes
+js/arcade-v2.js	50100 bytes
 js/continuity.js	12882 bytes
 js/dialogue-v2.js	15967 bytes
 js/dialogue.js	15095 bytes
-js/experience.js	97303 bytes
-js/extras.js	25595 bytes
-js/games-bundle.js	116093 bytes
-js/leisure.js	28685 bytes
+js/experience.js	95451 bytes
+js/extras.js	26594 bytes
+js/games-bundle.js	117377 bytes
+js/leisure.js	28771 bytes
 js/memories.js	15390 bytes
 js/music-theater.js	22661 bytes
-js/omikuji.js	16643 bytes
-js/poetry.js	19236 bytes
+js/omikuji.js	16714 bytes
+js/poetry.js	19336 bytes
 js/puzzles-extra.js	21324 bytes
 js/puzzles.js	17095 bytes
-js/sidebar-bundle.js	32076 bytes
+js/responsive.js	2317 bytes
+js/sidebar-bundle.js	32147 bytes
+js/visit-memory.js	1851 bytes
 netlify.toml	468 bytes
-netlify/functions/chat.js	13144 bytes
-package.json	419 bytes
-pages/music-theater.html	4420 bytes
-README.md	4337 bytes
+netlify/functions/chat.js	26674 bytes
+netlify/functions/game.js	7648 bytes
+package.json	530 bytes
+pages/music-theater.html	4486 bytes
+README.md	7310 bytes
 scripts/build-bundles.mjs	726 bytes
-tests/chat.test.mjs	5488 bytes
-tests/static.test.mjs	3549 bytes
+tests/chat.test.mjs	14334 bytes
+tests/game.test.mjs	1840 bytes
+tests/static.test.mjs	4978 bytes
 V61更新与性能复测说明.md	2909 bytes
 V62聊天与首次加载优化说明.md	4119 bytes
+V69更新说明.md	2210 bytes
+V70移动端适配说明.md	3160 bytes
+文件清单.txt	本文件

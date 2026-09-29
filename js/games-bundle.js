@@ -271,7 +271,7 @@ window.TakagiPuzzles.push(
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==theaterFrame?.contentWindow||event.data?.type!=='takagi-music-theater')return;
     const data=event.data;
-    if(data.sceneTitle){sceneName.textContent=data.sceneTitle;sceneTrack.textContent=`${data.trackTitle} · ${data.artist}`;sceneImage.src=data.thumb;save('takagi-music-title',data.sceneTitle);save('takagi-music-track-title',sceneTrack.textContent);save('takagi-music-thumb',data.thumb)}
+    if(data.sceneTitle){sceneName.textContent=data.sceneTitle;sceneTrack.textContent=`${data.trackTitle} · ${data.artist}`;sceneImage.src=data.thumb;save('takagi-music-title',data.sceneTitle);save('takagi-music-track-title',sceneTrack.textContent);save('takagi-music-thumb',data.thumb);globalThis.TakagiVisitMemory?.record('音乐',data.sceneTitle,sceneTrack.textContent)}
     if(data.action==='minimize')closeTheater(false);else if(data.action==='stop-close')closeTheater(true);
   });
   area.append(arcade,games,music);$('.interactions').after(area);
@@ -306,7 +306,7 @@ window.TakagiPuzzles.push(
     truth: { name: '真假捉弄', icon: '?', mode: '本地', time: '3–5 分钟', brief: '找出三句话中唯一不成立的一句。' },
     chain: { name: '中日词语接龙', icon: 'し', mode: '本地', time: '3–6 分钟', brief: '选择中文或日语假名，与高木轮流接词。' },
     memory: { name: '记忆翻牌', icon: '▦', mode: '本地', time: '2–5 分钟', brief: '记住校园与季节图案的位置并完成配对。' },
-    lateral: { name: '一句话推理', icon: '…', mode: '本地 / DeepSeek', time: '5–10 分钟', brief: '通过是非问题还原反常情境的真相。' },
+    lateral: { name: '一句话推理', icon: '…', mode: '本地 / 多引擎 AI', time: '5–10 分钟', brief: '通过是非问题还原反常情境的真相。' },
     mind: { name: '猜心对决', icon: '心', mode: '独立玩法', time: '5–10 分钟', brief: '观察选项与反应，在误导中猜中高木的想法。', external: './games/mind-duel.html?v=62' },
     eraser: { name: '橡皮对决', icon: '橡', mode: '独立玩法', time: '3–8 分钟', brief: '控制力度和方向，把橡皮弹向得分区域。', external: './games/eraser-duel.html?v=61' }
   };
@@ -316,7 +316,7 @@ window.TakagiPuzzles.push(
   if (!scores || typeof scores !== 'object') scores = {};
   keys.forEach(key => { if (!scores[key]) scores[key] = { played: 0, wins: 0, losses: 0, draws: 0 } });
   const saveScores = () => write('takagi-arcade-score-v2', JSON.stringify(scores));
-  const record = (key, result) => { const item = scores[key]; item.played++; if (result === 'win') item.wins++; else if (result === 'loss') item.losses++; else item.draws++; saveScores(); paintScore() };
+  const record = (key, result) => { const item = scores[key]; item.played++; if (result === 'win') item.wins++; else if (result === 'loss') item.losses++; else item.draws++; saveScores(); paintScore(); globalThis.TakagiVisitMemory?.record('游戏', `${info[key].name}完成一局`, `${levels[difficulty]} · ${result}`) };
 
   shelf.replaceChildren();
   const summary = document.createElement('summary');
@@ -339,7 +339,7 @@ window.TakagiPuzzles.push(
   const stage = make('div', '', 'arcade-stage');
   reactionLine = make('div', '高木：选一个吧。规则我会说清楚，输赢也会认真记。', 'arcade-reaction');
   reactionLine.setAttribute('role', 'status');
-  body.append(make('p', '统一难度对标准小游戏生效；猜心对决与橡皮对决保留各自设置。切换游戏会保留本次页面中的进度；AI 模式只有在你主动选择后才会调用 DeepSeek。', 'arcade-intro'), top, tabs, scoreLine, reactionLine, stage);
+  body.append(make('p', '统一难度对标准小游戏生效；猜心对决与橡皮对决保留各自设置。切换游戏会保留本次页面中的进度；智能模式优先调用千问，失败时依次尝试备用引擎。', 'arcade-intro'), top, tabs, scoreLine, reactionLine, stage);
   shelf.append(summary, body);
 
   let active = keys.includes(read('takagi-arcade-last-game')) ? read('takagi-arcade-last-game') : 'harmony';
@@ -354,7 +354,7 @@ window.TakagiPuzzles.push(
   function heading(key, rule) {
     const head = make('div', '', 'arcade-game-head');
     const title = make('div', '', 'arcade-title-line');
-    title.append(make('h3', info[key].name), make('span', info[key].mode, info[key].mode.includes('DeepSeek') ? 'game-badge ai' : 'game-badge local'), make('span', info[key].external ? '自带设置' : levels[difficulty], 'game-badge'));
+    title.append(make('h3', info[key].name), make('span', info[key].mode, info[key].mode.includes('AI') ? 'game-badge ai' : 'game-badge local'), make('span', info[key].external ? '自带设置' : levels[difficulty], 'game-badge'));
     const rules = make('details', '', 'game-rules');
     rules.append(make('summary', '查看完整规则'), make('p', rule));
     head.append(title, make('p', info[key].brief, 'game-lead'), make('small', `预计 ${info[key].time}`, 'game-subline'), rules);
@@ -369,7 +369,7 @@ window.TakagiPuzzles.push(
   function openOverview() {
     const wrap = make('div', '', 'game-overview');
     wrap.append(make('p', '八项游戏都有明确结束条件，可以随时退出或重新开始。成绩只保存在当前浏览器。'));
-    keys.forEach(key => { const card = make('section', '', 'game-overview-card'); const line = make('div', '', 'arcade-title-line'); line.append(make('h3', `${info[key].icon} ${info[key].name}`), make('span', info[key].mode, info[key].mode.includes('DeepSeek') ? 'game-badge ai' : 'game-badge local')); card.append(line, make('p', info[key].brief), make('small', `预计 ${info[key].time}`)); wrap.append(card) });
+    keys.forEach(key => { const card = make('section', '', 'game-overview-card'); const line = make('div', '', 'arcade-title-line'); line.append(make('h3', `${info[key].icon} ${info[key].name}`), make('span', info[key].mode, info[key].mode.includes('AI') ? 'game-badge ai' : 'game-badge local')); card.append(line, make('p', info[key].brief), make('small', `预计 ${info[key].time}`)); wrap.append(card) });
     wrap.append(make('h3', '四档难度'), make('p', '入门提供更多提示和更短局数；进阶保持平衡；成人挑战增加题量和判断干扰；高阶减少提示并提高对手策略。'));
     if (typeof openDialog === 'function') openDialog('小游戏玩法总览', wrap);
   }
@@ -511,14 +511,14 @@ window.TakagiPuzzles.push(
     { id:'note', title:'空白便笺', prompt:'她收到一张完全空白的便笺，却立刻知道是谁写的，也明白对方想说什么。为什么？', truth:'两人事先约定，空白便笺代表今天不方便说话，但会在老地方等对方。便笺本身就是暗号。', yes:['暗号','约定','事先','老地方','等待'], no:['隐形墨水','盲文','透光'], hints:['纸上确实什么也没有。','两个人以前谈过这件事。','空白本身就是约定的暗号。'] }
   ];
   function renderLateral() {
-    if (!states.lateral) { const storyPool = difficulty === 'easy' ? lateralStories.slice(0,3) : lateralStories; states.lateral = { story: shuffle(storyPool)[0], mode: read('takagi-lateral-mode') === 'ai' ? 'ai' : 'local', asks: [], progress: 0, hints: 0, max: [15,12,10,8][levelOrder[difficulty]], over: false, loading: false, recorded: false, message: '可以开始提问。' } }
-    const s = states.lateral; stage.replaceChildren(heading('lateral', '通过只能用“是、否、关系不大”回答的问题还原真相。你可以随时查看提示或揭晓；智能模式会调用 DeepSeek。'));
-    const mode = document.createElement('select'); [['local','本地题库'],['ai','DeepSeek 智能判断']].forEach(([value,label]) => { const option = make('option', label); option.value = value; mode.append(option) }); mode.value = s.mode; mode.onchange = () => { s.mode = mode.value; write('takagi-lateral-mode', s.mode); s.message = s.mode === 'ai' ? '智能模式会把你的问题发送给 DeepSeek，仅用于本局判断。' : '本地模式按题库关键词判断，不发送网络请求。'; renderLateral() };
-    const modeRow = make('div', '', 'game-mode-row'); const badge = make('span', s.mode === 'ai' ? '调用 API' : '不调用 API', s.mode === 'ai' ? 'game-badge ai' : 'game-badge local'); modeRow.append(make('label', '判断方式'), mode, badge); stage.append(modeRow, progress(s.asks.length, s.max, '提问次数'), make('div', '', 'lateral-prompt')); stage.lastElementChild.append(make('small', s.story.title), make('p', s.story.prompt)); stage.append(status(`${s.message} · 剩余 ${Math.max(0, s.max - s.asks.length)} 问`));
+    if (!states.lateral) { const storyPool = difficulty === 'easy' ? lateralStories.slice(0,3) : lateralStories; const savedMode = read('takagi-lateral-mode'); const validModes = ['local','auto','qwen-max','qwen-flash','deepseek-pro','deepseek-flash']; states.lateral = { story: shuffle(storyPool)[0], mode: validModes.includes(savedMode) ? savedMode : savedMode === 'ai' ? 'auto' : 'local', asks: [], progress: 0, hints: 0, max: [15,12,10,8][levelOrder[difficulty]], over: false, loading: false, recorded: false, message: '可以开始提问。' } }
+    const s = states.lateral; stage.replaceChildren(heading('lateral', '通过只能用“是、否、关系不大”回答的问题还原真相。智能自动模式按千问 Max、千问 Flash、DeepSeek Pro、DeepSeek Flash 的顺序尝试。'));
+    const mode = document.createElement('select'); [['local','本地题库'],['auto','智能自动切换 · 千问优先'],['qwen-max','千问 3.8 Max'],['qwen-flash','千问 3.8 Flash'],['deepseek-pro','DeepSeek Pro'],['deepseek-flash','DeepSeek Flash']].forEach(([value,label]) => { const option = make('option', label); option.value = value; mode.append(option) }); mode.value = s.mode; mode.onchange = () => { s.mode = mode.value; write('takagi-lateral-mode', s.mode); s.message = s.mode === 'local' ? '本地模式按题库关键词判断，不发送网络请求。' : '问题会发送给所选引擎；调用失败时会自动尝试备用引擎。'; renderLateral() };
+    const usesAI = s.mode !== 'local'; const modeRow = make('div', '', 'game-mode-row'); const badge = make('span', usesAI ? '多引擎 API' : '不调用 API', usesAI ? 'game-badge ai' : 'game-badge local'); modeRow.append(make('label', '判断方式'), mode, badge); stage.append(modeRow, progress(s.asks.length, s.max, '提问次数'), make('div', '', 'lateral-prompt')); stage.lastElementChild.append(make('small', s.story.title), make('p', s.story.prompt)); stage.append(status(`${s.message} · 剩余 ${Math.max(0, s.max - s.asks.length)} 问`));
     if (s.over) { stage.append(finishCard('真相', s.story.truth, '换一个情境', () => { delete states.lateral; renderLateral() })); return }
     const form = document.createElement('form'); form.className = 'duel-form'; const input = document.createElement('input'); input.maxLength = 180; input.placeholder = '例如：她是在等人吗？'; input.disabled = s.loading; const submit = make('button', s.loading ? '判断中…' : '提问'); submit.type = 'submit'; submit.disabled = s.loading; form.append(input, submit);
     const localJudge = question => { const yes = s.story.yes.find(word => question.includes(word)), no = s.story.no.find(word => question.includes(word)); if (yes) { s.progress = Math.min(95, s.progress + 18); return { answer: s.progress >= 72 ? '接近了' : '是', reply: s.progress >= 72 ? '接近了，沿着这个方向把关系说完整。' : '是，这个方向有关。' } } if (no) return { answer: '否', reply: '否，这不是造成反常情境的原因。' }; return { answer: '关系不大', reply: '关系不大。可以问人物、时间或目的。' } };
-    form.onsubmit = async event => { event.preventDefault(); const question = input.value.trim(); if (question.length < 2) { s.message = '请写出一个完整问题。'; renderLateral(); return } s.loading = true; s.message = '正在判断…'; renderLateral(); let result; if (s.mode === 'ai') { try { const response = await fetch('/api/game', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ game:'lateral', storyId:s.story.id, question, history:s.asks.map(item => `问：${item.q} 答：${item.a}`) }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'AI 判断失败'); result = { answer:data.answer, reply:data.reply }; s.progress = Math.max(s.progress, Number(data.progress) || 0) } catch (error) { result = localJudge(question); result.reply = `${error.message || 'AI 暂不可用'} 已使用本地判断：${result.reply}` } } else result = localJudge(question); s.asks.push({ q:question, a:result.answer }); s.loading = false; s.message = `${result.answer}。${result.reply}`; if (s.asks.length >= s.max) { s.over = true; if (!s.recorded) { s.recorded = true; record('lateral', 'loss') } } say(s.message, result.answer === '接近了' ? 'playful' : 'warm'); renderLateral() };
+    form.onsubmit = async event => { event.preventDefault(); const question = input.value.trim(); if (question.length < 2) { s.message = '请写出一个完整问题。'; renderLateral(); return } s.loading = true; s.message = '正在判断…'; renderLateral(); let result; if (s.mode !== 'local') { try { const password = document.querySelector('#ai-password')?.value || sessionStorage.getItem('takagi-ai-password') || ''; if (!password) throw new Error('请先在聊天区输入 AI 访问密码'); const response = await fetch('/api/game', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ game:'lateral', storyId:s.story.id, question, password, modelPreference:s.mode === 'auto' ? 'qwen-max' : s.mode, allowFallback:true, history:s.asks.map(item => `问：${item.q} 答：${item.a}`), visitContext:globalThis.TakagiVisitMemory?.context() || '' }) }); const data = await response.json(); if (!response.ok) throw new Error([data.error, data.reminder].filter(Boolean).join('。') || 'AI 判断失败'); const switched = data.fallbacks?.length ? `${data.fallbacks.map(item => item.engineName).join('、')}调用失败，已切换到${data.engineName}。` : `${data.engineName}完成判断。`; result = { answer:data.answer, reply:`${switched}${data.reply}` }; s.progress = Math.max(s.progress, Number(data.progress) || 0) } catch (error) { result = localJudge(question); result.reply = `${error.message || '在线引擎暂不可用'}。已继续使用本地判断：${result.reply}` } } else result = localJudge(question); s.asks.push({ q:question, a:result.answer }); s.loading = false; s.message = `${result.answer}。${result.reply}`; globalThis.TakagiVisitMemory?.record('推理游戏', question.slice(0,60), s.message.slice(0,80)); if (s.asks.length >= s.max) { s.over = true; if (!s.recorded) { s.recorded = true; record('lateral', 'loss') } } say(s.message, result.answer === '接近了' ? 'playful' : 'warm'); renderLateral() };
     const actions = make('div', '', 'arcade-actions'); actions.append(button('给一点提示', () => { s.message = `提示：${s.story.hints[Math.min(s.hints, s.story.hints.length - 1)]}`; s.hints++; renderLateral() }), button('我猜到了，揭晓', () => { s.over = true; if (!s.recorded) { s.recorded = true; record('lateral', s.progress >= 55 || s.asks.length >= 3 ? 'win' : 'draw') } renderLateral() }), button('换一题', () => { delete states.lateral; renderLateral() }));
     const history = make('div', '', 'lateral-history'); s.asks.slice(-6).forEach((item, index) => history.append(make('p', `${s.asks.length - Math.min(6,s.asks.length) + index + 1}. ${item.q}　${item.a}`))); stage.append(form, actions, history);
   }

@@ -1,6 +1,6 @@
-# Takagi V68 Netlify 多引擎聊天
+# Takagi V70 移动端响应式适配
 
-这是一个可直接放入 GitHub 仓库根目录并由 Netlify 部署的静态网站。主入口是 `index.html`，DeepSeek 请求由 `netlify/functions/chat.js` 转发。
+这是一个可直接放入 GitHub 仓库根目录并由 Netlify 部署的静态网站。主入口是 `index.html`，聊天和小游戏的在线判断由 Netlify Functions 转发。
 
 ## 目录
 
@@ -14,8 +14,9 @@
 ├─ pages/                  独立功能页面
 ├─ netlify/
 │  └─ functions/
-│     └─ chat.js           DeepSeek 代理与访问密码校验
-├─ _redirects              /api/chat 路由
+│     ├─ chat.js           聊天多引擎代理与访问密码校验
+│     └─ game.js           小游戏多引擎代理与访问密码校验
+├─ _redirects              /api/chat 与 /api/game 路由
 ├─ netlify.toml            Netlify 构建配置
 ├─ package.json
 ├─ .env.example            环境变量名称示例
@@ -43,7 +44,24 @@ https://你的业务空间ID.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 
 不要填写花括号，也不要把 API Key 写进地址。修改环境变量后必须触发一次新部署。
 
-## V68 接口排错
+## V69 引擎顺序与连续体验
+
+1. 新玩家默认选择千问 3.8 Max。自动顺序为千问 3.8 Max、千问 3.8 Flash、DeepSeek Pro、DeepSeek Flash。
+2. 当前引擎失败时，函数继续尝试备用引擎。成功后页面会说明哪些引擎失败，以及最终使用的引擎。
+3. “一句话推理”提供本地题库、智能自动切换和四个单独引擎选项。在线判断沿用聊天区的访问密码。
+4. `sessionStorage` 记录本次标签页中的场景、互动、聊天、小游戏、御神签、诗笺和音乐线索，并把近期线索随聊天请求发送。关闭标签页或清除本机偏好后记录失效。
+5. 小游戏与侧栏脚本改为临近使用时加载。浏览器语音仅使用浏览器自带识别，不再请求不存在的云端转写接口。
+
+## V70 响应式布局
+
+1. 手机与平板使用单列主内容，桌面端保留原有双列布局。
+2. 1024px 及以下使用汉堡菜单，菜单项保持至少 44px 的触摸高度。
+3. 聊天区按可视窗口调整高度，输入区固定在聊天面板底部，并监听移动端键盘造成的可视区域变化。
+4. 设置、诗集、御神签、回忆录、小游戏和音乐小剧场在窄屏下使用全屏或接近全屏面板。
+5. 主页面、橡皮对决、猜心对决和音乐小剧场均限制横向溢出，图片、视频、音频和画布随容器缩放。
+6. 响应式验证方法和重点检查项见 `V70移动端适配说明.md`。
+
+## 接口排错
 
 1. DeepSeek 不再启用强制 JSON Output，避免官方已说明的偶发空正文问题。系统提示仍要求 JSON；服务端也兼容普通文本回复。
 2. DeepSeek 显式使用非思考模式。偶发空正文会返回 `ENGINE_EMPTY_REPLY`，不会再误报网络故障。
@@ -61,7 +79,7 @@ https://你的业务空间ID.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 
 ## 当前会话与用量规则
 
-- DeepSeek 每次接收当前消息，以及最近 12 条短期对话消息。
+- 当前成功引擎每次接收当前消息、最近 12 条短期对话消息，以及本次标签页中的轻量体验线索。
 - 页面以“已记录数量 / 12 条消息”显示当前短期记忆占用量。达到 12 条后，最早的消息依次移出上下文。
 - 刷新同一标签页会保留短期对话和已验证密码；关闭标签页后两者清除。
 - 当前简化密码版没有两小时有效期、个人调用次数或每日额度。密码保存在标签页期间，每次请求仍由 Netlify Function 重新校验。
@@ -90,8 +108,9 @@ https://你的业务空间ID.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 ## 不能删除或改名的文件
 
 - `index.html` 是站点入口。
-- `netlify/functions/chat.js` 负责服务端密码校验和 DeepSeek 调用。
-- `_redirects` 把 `/api/chat` 映射到 Netlify Function。
+- `netlify/functions/chat.js` 负责聊天的服务端密码校验和多引擎调用。
+- `netlify/functions/game.js` 负责小游戏在线判断的密码校验和多引擎调用。
+- `_redirects` 把 `/api/chat` 与 `/api/game` 映射到 Netlify Functions。
 - `netlify.toml` 声明发布目录和函数目录。
 - `assets/`、`css/`、`js/`、`games/`、`pages/` 中的相对路径已由页面引用。
 

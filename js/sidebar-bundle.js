@@ -117,7 +117,7 @@
     paper.append(head,portrait,copy,actions);
     saveButton.onclick=()=>saveCard(fortune,message,sceneLine);
     again.onclick=()=>startDraw();
-    const line=companionLine(fortune);addContext(`御神签展开了：${fortune.name}`);add('assistant',line,fortune.name==='凶'?'quiet':'warm');speak(line,fortune.name==='大吉'?'playful':'warm');
+    const line=companionLine(fortune);addContext(`御神签展开了：${fortune.name}`);globalThis.TakagiVisitMemory?.record('御神签',fortune.name,message);add('assistant',line,fortune.name==='凶'?'quiet':'warm');speak(line,fortune.name==='大吉'?'playful':'warm');
   }
   function startDraw(){
     if(!boxOpen){revealBox();return}

@@ -135,5 +135,13 @@
   interact=function(action){if(action!=='bet')return originalInteract(action);const answer=1+Math.floor(Math.random()*3);const body=document.createElement('div');body.append(textEl('p','我选好了 1、2、3 中的一个数字。你只有一次机会，要猜哪个？'));const options=document.createElement('div');options.className='guess-options';body.append(options);[1,2,3].forEach(value=>{const button=textEl('button',String(value));options.append(button);button.onclick=()=>{options.querySelectorAll('button').forEach(b=>b.disabled=true);const line=value===answer?`猜对了，是 ${answer}。这局算你赢。`:`我选的是 ${answer}。这局被我赢了一次，要再试试吗？`;body.append(textEl('p',line));speak(line,'playful');add('assistant',line);const again=textEl('button','再玩一局','setting');again.onclick=()=>interact('bet');body.append(again)}});openDialog('数字小挑战',body);return{action:'bet',reply:'数字挑战已开始'}};
 })();
 
-const gamesScript=document.createElement('script');gamesScript.src='./js/games-bundle.js?v=62';gamesScript.onload=()=>{const sidebarScript=document.createElement('script');sidebarScript.src='./js/sidebar-bundle.js?v=62';document.body.append(sidebarScript)};document.body.append(gamesScript);
+const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.body.append(script)});
+let gamesPromise=null,sidebarPromise=null,sidebarReady=false;
+const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=69'));
+const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=69').then(()=>{sidebarReady=true}));
+const gameAnchor=document.querySelector('.interactions');
+if(gameAnchor&&'IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();loadGames()}},{rootMargin:'700px'});observer.observe(gameAnchor)}else setTimeout(loadGames,1200);
+setTimeout(loadGames,6000);
+['omikuji-open','memories-open'].forEach(id=>{const trigger=document.getElementById(id);if(!trigger)return;const warm=()=>loadSidebar();trigger.addEventListener('pointerenter',warm,{once:true});trigger.addEventListener('focus',warm,{once:true});trigger.addEventListener('click',function resume(event){if(sidebarReady)return;event.preventDefault();event.stopImmediatePropagation();loadSidebar().then(()=>trigger.click())},{capture:true})});
+setTimeout(loadSidebar,9000);
 
