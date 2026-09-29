@@ -1,190 +1,183 @@
-Takagi V70 完整文件清单
-生成时间：2026-09-29
-文件总数：186
-
-_redirects	97 bytes
-.env.example	167 bytes
-.gitignore	36 bytes
-.nvmrc	3 bytes
-上传说明.md	2606 bytes
-上传说明.txt	368 bytes
-assets-sha256.txt	14205 bytes
-assets/cafeteria.png	576386 bytes
-assets/cafeteria.webp	116566 bytes
-assets/evening-study.png	560162 bytes
-assets/evening-study.webp	90318 bytes
-assets/gm/takagi-collage-memories.jpg	157744 bytes
-assets/gm/takagi-collage-scenes.jpg	215988 bytes
-assets/gm/takagi-manga-glance.gif	3658433 bytes
-assets/gm/takagi-memory.gif	4272545 bytes
-assets/gm/takagi-outfits-strip.jpg	191473 bytes
-assets/gm/takagi-seaside-sunset.jpg	108729 bytes
-assets/gm/takagi-shadow-play.jpg	102011 bytes
-assets/gm/takagi-sketch-duo.jpg	55704 bytes
-assets/gm/takagi-spring-classroom.jpg	119810 bytes
-assets/gm/takagi-sunset-close.jpg	79756 bytes
-assets/gm/takagi-winter-scarf.jpg	135148 bytes
-assets/memories/manifest.json	2375 bytes
-assets/memories/memory-01.png	75974 bytes
-assets/memories/memory-02.png	86979 bytes
-assets/memories/memory-03.png	79842 bytes
-assets/memories/memory-04.png	81975 bytes
-assets/memories/memory-05.png	69751 bytes
-assets/memories/memory-06.png	81160 bytes
-assets/memories/memory-07.png	46734 bytes
-assets/memories/memory-08.png	46299 bytes
-assets/memories/memory-09.png	52670 bytes
-assets/memories/memory-10.png	68337 bytes
-assets/memories/memory-11.png	57805 bytes
-assets/memories/memory-12.png	67561 bytes
-assets/memories/memory-13.png	62862 bytes
-assets/memories/memory-14.png	55119 bytes
-assets/memories/memory-15.png	54387 bytes
-assets/memories/memory-16.png	60271 bytes
-assets/memories/memory-17.png	70055 bytes
-assets/memories/memory-18.png	53782 bytes
-assets/memories/memory-19.png	55803 bytes
-assets/memories/memory-20.png	64550 bytes
-assets/memories/memory-21.png	61321 bytes
-assets/memories/memory-22.png	63935 bytes
-assets/memories/memory-23.png	61470 bytes
-assets/memories/memory-24.png	66390 bytes
-assets/memories/memory-25.png	58557 bytes
-assets/memories/memory-26.png	60172 bytes
-assets/memories/memory-27.png	59395 bytes
-assets/memories/memory-28.png	60342 bytes
-assets/memories/memory-29.png	65441 bytes
-assets/memories/memory-30.png	62756 bytes
-assets/mind-duel-bg.webp	183716 bytes
-assets/mind-duel-player.webp	5248 bytes
-assets/mind-duel-takagi.webp	4928 bytes
-assets/music-scenes/library-dusk-thumb.webp	19802 bytes
-assets/music-scenes/morning-classroom-thumb.webp	26282 bytes
-assets/music-scenes/rain-classroom-thumb.webp	27424 bytes
-assets/music-scenes/sakura-path-thumb.webp	35534 bytes
-assets/music-scenes/seaside-station-thumb.webp	32346 bytes
-assets/music-scenes/starry-night-thumb.webp	23182 bytes
-assets/music-scenes/summer-festival-thumb.webp	35524 bytes
-assets/music-scenes/sunset-classroom-thumb.webp	27862 bytes
-assets/music-scenes/winter-window-thumb.webp	27988 bytes
-assets/official-chapters/cafeteria.jpg	45558 bytes
-assets/official-chapters/classroom.jpg	44297 bytes
-assets/official-chapters/festival.jpg	55877 bytes
-assets/official-chapters/rain.jpg	42488 bytes
-assets/official-chapters/study.jpg	86169 bytes
-assets/official-chapters/valentine.jpg	37591 bytes
-assets/official-chapters/white-day.jpg	54985 bytes
-assets/omikuji-scenes/beach.webp	192604 bytes
-assets/omikuji-scenes/festival.webp	207070 bytes
-assets/omikuji-scenes/spring.webp	240288 bytes
-assets/omikuji-scenes/winter.webp	237218 bytes
-assets/rain-corridor.png	599011 bytes
-assets/rain-corridor.webp	123628 bytes
-assets/rain-gallery.png	832294 bytes
-assets/rain-gallery.webp	188340 bytes
-assets/study.png	467606 bytes
-assets/study.webp	80802 bytes
-assets/summer-window.png	614497 bytes
-assets/summer-window.webp	147626 bytes
-assets/takagi-avatar.webp	6310 bytes
-assets/takagi-comic01.jpg	25925 bytes
-assets/takagi-movie.jpg	231661 bytes
-assets/takagi.png	488120 bytes
-assets/takagi.webp	103748 bytes
-assets/user-gallery-202609/b1-01.webp	29506 bytes
-assets/user-gallery-202609/b1-02.webp	86460 bytes
-assets/user-gallery-202609/b1-03.webp	46352 bytes
-assets/user-gallery-202609/b1-04.webp	131484 bytes
-assets/user-gallery-202609/b1-05.webp	83278 bytes
-assets/user-gallery-202609/b1-06.webp	48040 bytes
-assets/user-gallery-202609/b1-07.webp	18906 bytes
-assets/user-gallery-202609/b1-08.webp	33008 bytes
-assets/user-gallery-202609/b1-09.webp	32080 bytes
-assets/user-gallery-202609/b1-10.webp	19296 bytes
-assets/user-gallery-202609/b1-11.webp	14624 bytes
-assets/user-gallery-202609/b1-12.webp	21442 bytes
-assets/user-gallery-202609/b1-13.webp	17354 bytes
-assets/user-gallery-202609/b1-14.webp	28894 bytes
-assets/user-gallery-202609/b1-15.webp	24800 bytes
-assets/user-gallery-202609/b1-16.webp	14374 bytes
-assets/user-gallery-202609/b1-17.webp	25504 bytes
-assets/user-gallery-202609/b1-18.webp	27470 bytes
-assets/user-gallery-202609/b1-19.webp	103616 bytes
-assets/user-gallery-202609/b1-20.webp	224236 bytes
-assets/user-gallery-202609/b2-01.webp	65190 bytes
-assets/user-gallery-202609/b2-02.webp	61556 bytes
-assets/user-gallery-202609/b2-03.webp	65680 bytes
-assets/user-gallery-202609/b2-04.webp	22976 bytes
-assets/user-gallery-202609/b2-05.webp	48966 bytes
-assets/user-gallery-202609/b2-06.webp	36774 bytes
-assets/user-gallery-202609/b2-07.webp	46778 bytes
-assets/user-gallery-202609/b2-08.webp	81134 bytes
-assets/user-gallery-202609/b2-09.webp	15814 bytes
-assets/user-gallery-202609/b2-10.webp	32020 bytes
-assets/user-gallery-202609/b2-11.webp	52586 bytes
-assets/user-gallery-202609/b2-12.webp	19212 bytes
-assets/user-gallery-202609/b2-13.webp	27430 bytes
-assets/user-gallery-202609/b2-14.webp	26082 bytes
-assets/user-gallery-202609/b2-15.webp	29604 bytes
-assets/user-gallery-202609/b2-16.webp	30084 bytes
-assets/user-gallery-202609/b3-01.webp	13018 bytes
-assets/user-gallery-202609/b3-02-thumb.webp	2814 bytes
-assets/user-gallery-202609/b3-03.webp	33210 bytes
-assets/user-gallery-202609/b3-04.webp	107248 bytes
-assets/user-gallery-202609/b3-05.webp	112150 bytes
-assets/user-gallery-202609/b3-06.webp	81860 bytes
-assets/user-gallery-202609/b3-07.webp	54146 bytes
-assets/user-gallery-202609/b3-08.webp	71746 bytes
-assets/user-gallery-202609/b3-09-thumb.webp	4076 bytes
-assets/user-gallery-202609/b3-09.webp	20534 bytes
-assets/user-gallery-202609/b3-10.webp	61546 bytes
-assets/user-gallery-202609/b3-11.webp	37896 bytes
-assets/user-gallery-202609/b3-12.webp	36190 bytes
-assets/user-gallery-202609/b3-13.webp	38272 bytes
-assets/user-gallery-202609/b3-14.webp	19400 bytes
-assets/user-gallery-202609/b3-15.webp	30164 bytes
-assets/user-gallery-202609/b3-16.webp	44954 bytes
-assets/user-gallery-202609/b3-17.webp	81612 bytes
-assets/user-gallery-202609/b3-18.webp	29582 bytes
-assets/user-gallery-202609/b3-19.webp	31340 bytes
-assets/user-gallery-202609/b3-20.webp	21232 bytes
-css/continuity.css	1653 bytes
-css/music-theater.css	13576 bytes
-css/responsive-games.css	1346 bytes
-css/responsive.css	13946 bytes
-css/styles.css	104516 bytes
-games/eraser-duel.html	55376 bytes
-games/mind-duel.html	46006 bytes
-index.html	7561 bytes
-js/arcade-v2.js	50100 bytes
-js/continuity.js	12882 bytes
-js/dialogue-v2.js	15967 bytes
-js/dialogue.js	15095 bytes
-js/experience.js	95451 bytes
-js/extras.js	26594 bytes
-js/games-bundle.js	117377 bytes
-js/leisure.js	28771 bytes
-js/memories.js	15390 bytes
-js/music-theater.js	22661 bytes
-js/omikuji.js	16714 bytes
-js/poetry.js	19336 bytes
-js/puzzles-extra.js	21324 bytes
-js/puzzles.js	17095 bytes
-js/responsive.js	2317 bytes
-js/sidebar-bundle.js	32147 bytes
-js/visit-memory.js	1851 bytes
-netlify.toml	468 bytes
-netlify/functions/chat.js	26674 bytes
-netlify/functions/game.js	7648 bytes
-package.json	530 bytes
-pages/music-theater.html	4486 bytes
-README.md	7310 bytes
-scripts/build-bundles.mjs	726 bytes
-tests/chat.test.mjs	14334 bytes
-tests/game.test.mjs	1840 bytes
-tests/static.test.mjs	4978 bytes
-V61更新与性能复测说明.md	2909 bytes
-V62聊天与首次加载优化说明.md	4119 bytes
-V69更新说明.md	2210 bytes
-V70移动端适配说明.md	3160 bytes
-文件清单.txt	本文件
+_redirects
+.env.example
+.gitignore
+.nvmrc
+上传说明.md
+上传说明.txt
+文件清单.txt
+assets-sha256.txt
+assets\cafeteria.png
+assets\cafeteria.webp
+assets\evening-study.png
+assets\evening-study.webp
+assets\gm\takagi-collage-memories.jpg
+assets\gm\takagi-collage-scenes.jpg
+assets\gm\takagi-manga-glance.gif
+assets\gm\takagi-memory.gif
+assets\gm\takagi-outfits-strip.jpg
+assets\gm\takagi-seaside-sunset.jpg
+assets\gm\takagi-shadow-play.jpg
+assets\gm\takagi-sketch-duo.jpg
+assets\gm\takagi-spring-classroom.jpg
+assets\gm\takagi-sunset-close.jpg
+assets\gm\takagi-winter-scarf.jpg
+assets\memories\manifest.json
+assets\memories\memory-01.png
+assets\memories\memory-02.png
+assets\memories\memory-03.png
+assets\memories\memory-04.png
+assets\memories\memory-05.png
+assets\memories\memory-06.png
+assets\memories\memory-07.png
+assets\memories\memory-08.png
+assets\memories\memory-09.png
+assets\memories\memory-10.png
+assets\memories\memory-11.png
+assets\memories\memory-12.png
+assets\memories\memory-13.png
+assets\memories\memory-14.png
+assets\memories\memory-15.png
+assets\memories\memory-16.png
+assets\memories\memory-17.png
+assets\memories\memory-18.png
+assets\memories\memory-19.png
+assets\memories\memory-20.png
+assets\memories\memory-21.png
+assets\memories\memory-22.png
+assets\memories\memory-23.png
+assets\memories\memory-24.png
+assets\memories\memory-25.png
+assets\memories\memory-26.png
+assets\memories\memory-27.png
+assets\memories\memory-28.png
+assets\memories\memory-29.png
+assets\memories\memory-30.png
+assets\mind-duel-bg.webp
+assets\mind-duel-player.webp
+assets\mind-duel-takagi.webp
+assets\music-scenes\library-dusk-thumb.webp
+assets\music-scenes\morning-classroom-thumb.webp
+assets\music-scenes\rain-classroom-thumb.webp
+assets\music-scenes\sakura-path-thumb.webp
+assets\music-scenes\seaside-station-thumb.webp
+assets\music-scenes\starry-night-thumb.webp
+assets\music-scenes\summer-festival-thumb.webp
+assets\music-scenes\sunset-classroom-thumb.webp
+assets\music-scenes\winter-window-thumb.webp
+assets\official-chapters\cafeteria.jpg
+assets\official-chapters\classroom.jpg
+assets\official-chapters\festival.jpg
+assets\official-chapters\rain.jpg
+assets\official-chapters\study.jpg
+assets\official-chapters\valentine.jpg
+assets\official-chapters\white-day.jpg
+assets\omikuji-scenes\beach.webp
+assets\omikuji-scenes\festival.webp
+assets\omikuji-scenes\spring.webp
+assets\omikuji-scenes\winter.webp
+assets\rain-corridor.png
+assets\rain-corridor.webp
+assets\rain-gallery.png
+assets\rain-gallery.webp
+assets\study.png
+assets\study.webp
+assets\summer-window.png
+assets\summer-window.webp
+assets\takagi-avatar.webp
+assets\takagi-comic01.jpg
+assets\takagi-movie.jpg
+assets\takagi.png
+assets\takagi.webp
+assets\user-gallery-202609\b1-01.webp
+assets\user-gallery-202609\b1-02.webp
+assets\user-gallery-202609\b1-03.webp
+assets\user-gallery-202609\b1-04.webp
+assets\user-gallery-202609\b1-05.webp
+assets\user-gallery-202609\b1-06.webp
+assets\user-gallery-202609\b1-07.webp
+assets\user-gallery-202609\b1-08.webp
+assets\user-gallery-202609\b1-09.webp
+assets\user-gallery-202609\b1-10.webp
+assets\user-gallery-202609\b1-11.webp
+assets\user-gallery-202609\b1-12.webp
+assets\user-gallery-202609\b1-13.webp
+assets\user-gallery-202609\b1-14.webp
+assets\user-gallery-202609\b1-15.webp
+assets\user-gallery-202609\b1-16.webp
+assets\user-gallery-202609\b1-17.webp
+assets\user-gallery-202609\b1-18.webp
+assets\user-gallery-202609\b1-19.webp
+assets\user-gallery-202609\b1-20.webp
+assets\user-gallery-202609\b2-01.webp
+assets\user-gallery-202609\b2-02.webp
+assets\user-gallery-202609\b2-03.webp
+assets\user-gallery-202609\b2-04.webp
+assets\user-gallery-202609\b2-05.webp
+assets\user-gallery-202609\b2-06.webp
+assets\user-gallery-202609\b2-07.webp
+assets\user-gallery-202609\b2-08.webp
+assets\user-gallery-202609\b2-09.webp
+assets\user-gallery-202609\b2-10.webp
+assets\user-gallery-202609\b2-11.webp
+assets\user-gallery-202609\b2-12.webp
+assets\user-gallery-202609\b2-13.webp
+assets\user-gallery-202609\b2-14.webp
+assets\user-gallery-202609\b2-15.webp
+assets\user-gallery-202609\b2-16.webp
+assets\user-gallery-202609\b3-01.webp
+assets\user-gallery-202609\b3-02-thumb.webp
+assets\user-gallery-202609\b3-03.webp
+assets\user-gallery-202609\b3-04.webp
+assets\user-gallery-202609\b3-05.webp
+assets\user-gallery-202609\b3-06.webp
+assets\user-gallery-202609\b3-07.webp
+assets\user-gallery-202609\b3-08.webp
+assets\user-gallery-202609\b3-09-thumb.webp
+assets\user-gallery-202609\b3-09.webp
+assets\user-gallery-202609\b3-10.webp
+assets\user-gallery-202609\b3-11.webp
+assets\user-gallery-202609\b3-12.webp
+assets\user-gallery-202609\b3-13.webp
+assets\user-gallery-202609\b3-14.webp
+assets\user-gallery-202609\b3-15.webp
+assets\user-gallery-202609\b3-16.webp
+assets\user-gallery-202609\b3-17.webp
+assets\user-gallery-202609\b3-18.webp
+assets\user-gallery-202609\b3-19.webp
+assets\user-gallery-202609\b3-20.webp
+css\continuity.css
+css\music-theater.css
+css\responsive-games.css
+css\responsive.css
+css\styles.css
+games\eraser-duel.html
+games\mind-duel.html
+index.html
+js\arcade-v2.js
+js\continuity.js
+js\dialogue-v2.js
+js\dialogue.js
+js\experience.js
+js\extras.js
+js\games-bundle.js
+js\leisure.js
+js\memories.js
+js\music-theater.js
+js\omikuji.js
+js\poetry.js
+js\puzzles-extra.js
+js\puzzles.js
+js\responsive.js
+js\sidebar-bundle.js
+js\visit-memory.js
+netlify.toml
+netlify\functions\chat.js
+netlify\functions\game.js
+package.json
+pages\music-theater.html
+README.md
+scripts\build-bundles.mjs
+tests\chat.test.mjs
+tests\game.test.mjs
+tests\static.test.mjs
+V71接口稳定性说明.md

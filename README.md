@@ -1,4 +1,4 @@
-# Takagi V70 移动端响应式适配
+# Takagi V71 接口稳定性与移动端适配
 
 这是一个可直接放入 GitHub 仓库根目录并由 Netlify 部署的静态网站。主入口是 `index.html`，聊天和小游戏的在线判断由 Netlify Functions 转发。
 
@@ -31,18 +31,26 @@
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | DeepSeek 官方 API Key | 是 |
 | `QWEN_API_KEY` | 阿里云百炼千问 API Key | 是 |
-| `QWEN_BASE_URL` | 千问指定地域或业务空间的 compatible-mode/v1 地址 | 否 |
+| `QWEN_BASE_URL` | 千问指定地域或业务空间的 compatible-mode/v1 地址 | 业务空间 Key 必需 |
 | `ADMIN_PASSWORD` | 访问者使用 AI 对话时输入的密码 | 是 |
 
 修改访问密码时，只需更新 Netlify 后台的 `ADMIN_PASSWORD` 并重新部署。代码和 GitHub 仓库中不保存真实密码。
 
-千问新版业务空间建议填写 `QWEN_BASE_URL`。华北 2 区格式为：
+千问业务空间 API Key 的前缀通常为 `sk-ws-`。此类 Key 必须填写 `QWEN_BASE_URL`，函数会拒绝把它发送到公共地址，避免请求落到错误的服务入口。华北 2 区格式为：
 
 ```text
 https://你的业务空间ID.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
 ```
 
-不要填写花括号，也不要把 API Key 写进地址。修改环境变量后必须触发一次新部署。
+从百炼控制台的“按量付费 Base URL”复制完整地址，填入该变量。不要填写花括号，也不要把 API Key 写进地址。修改环境变量后必须触发一次新部署。
+
+## V71 接口稳定性
+
+1. 聊天和小游戏优先读取 `QWEN_BASE_URL`，并自动补全 `/chat/completions`。变量中写 Base URL 或完整聊天地址都可以。
+2. 业务空间 Key 缺少该变量时，函数立即返回 `QWEN_BASE_URL_REQUIRED`。页面会显示可执行的配置提示，函数不会再尝试公共千问地址。
+3. 日常聊天不启用千问联网搜索。天气、新闻、汇率、赛程、交通、实时价格等问题会启用搜索，使用 `turbo` 策略控制等待时间。
+4. 单次聊天总预算为 52 秒。首选引擎为 20 秒，实时搜索首选为 26 秒，备用引擎为 10 秒。前端等待 58 秒，避免客户端先于函数中止请求。
+5. 单条历史消息最多保留 520 字，最近 12 条历史合计最多 4800 字。本次页面体验线索和词条素材也同步收缩，降低请求体和生成耗时。
 
 ## V69 引擎顺序与连续体验
 

@@ -130,13 +130,34 @@ test("三个新增在线引擎都使用各自模型与同一份系统提示词",
   }
 
   assert.equal(calls[0].body.model, "qwen3.8-flash");
-  assert.equal(calls[0].body.enable_search, true);
+  assert.equal(calls[0].body.enable_search, undefined);
   assert.deepEqual(calls[0].body.response_format, { type: "json_object" });
   assert.equal(calls[1].body.model, "deepseek-v4-pro");
   assert.equal(calls[1].body.enable_search, undefined);
   assert.equal(calls[1].body.response_format, undefined);
   assert.equal(calls[1].body.reasoning_effort, "none");
   assert.equal(calls[0].body.messages[0].content, calls[1].body.messages[0].content);
+});
+
+test("千问业务空间 Key 缺少专属地址时不访问公共地址", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "sk-ws-test-workspace-key";
+  delete process.env.QWEN_BASE_URL;
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("不应调用公共地址"); };
+
+  const response = await handler(request({
+    message: "你好",
+    password: "configured-secret",
+    modelPreference: "qwen-max",
+    allowFallback: false,
+  }));
+  const failure = await response.json();
+
+  assert.equal(response.status, 503);
+  assert.equal(failure.code, "QWEN_BASE_URL_REQUIRED");
+  assert.equal(calls, 0);
+  assert.match(failure.details.message, /QWEN_BASE_URL/);
 });
 
 test("千问账户状态异常时返回准确原因", async () => {

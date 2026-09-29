@@ -6,10 +6,7 @@ const ENGINE_CONFIG = Object.freeze({
     id: "qwen-max",
     name: "千问 3.8 Max",
     model: "qwen3.8-max",
-    endpoints: [
-      "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-      "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-    ],
+    endpoints: ["https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"],
     apiKeyEnv: "QWEN_API_KEY",
     provider: "qwen",
   },
@@ -17,10 +14,7 @@ const ENGINE_CONFIG = Object.freeze({
     id: "qwen-flash",
     name: "千问 3.8 Flash",
     model: "qwen3.8-flash",
-    endpoints: [
-      "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-      "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-    ],
+    endpoints: ["https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"],
     apiKeyEnv: "QWEN_API_KEY",
     provider: "qwen",
   },
@@ -43,8 +37,16 @@ const ENGINE_CONFIG = Object.freeze({
 });
 const MAX_MESSAGE_LENGTH = 1200;
 const MAX_HISTORY_ITEMS = 12;
+const MAX_HISTORY_ITEM_LENGTH = 520;
+const MAX_HISTORY_CONTEXT_LENGTH = 4_800;
 const MAX_IMAGE_DATA_LENGTH = 1_900_000;
-const REQUEST_TIMEOUT_MS = 10_000;
+const MAX_TOPIC_CONTEXT_LENGTH = 360;
+const MAX_VISIT_CONTEXT_LENGTH = 900;
+const REQUEST_BUDGET_MS = 52_000;
+const PRIMARY_ENGINE_TIMEOUT_MS = 20_000;
+const SEARCH_PRIMARY_ENGINE_TIMEOUT_MS = 26_000;
+const FALLBACK_ENGINE_TIMEOUT_MS = 10_000;
+const MIN_ATTEMPT_TIMEOUT_MS = 3_500;
 const FALLBACK_ORDERS = Object.freeze({
   "qwen-max": ["qwen-max", "qwen-flash", "deepseek-pro", "deepseek-flash"],
   "qwen-flash": ["qwen-flash", "qwen-max", "deepseek-pro", "deepseek-flash"],
@@ -90,17 +92,25 @@ function cleanProfile(value) {
 
 function cleanHistory(value) {
   if (!Array.isArray(value)) return [];
-  return value
+  const recent = value
     .slice(-MAX_HISTORY_ITEMS)
     .map((item) => ({
       role: item?.role === "assistant" ? "assistant" : "user",
-      content: cleanText(item?.content ?? item?.text, MAX_MESSAGE_LENGTH),
+      content: cleanText(item?.content ?? item?.text, MAX_HISTORY_ITEM_LENGTH),
     }))
     .filter((item) => item.content);
+  let total = 0;
+  const kept = [];
+  for (const item of recent.toReversed()) {
+    if (total + item.content.length > MAX_HISTORY_CONTEXT_LENGTH && kept.length) continue;
+    kept.push(item);
+    total += item.content.length;
+  }
+  return kept.reverse();
 }
 
 function cleanTopicContext(value) {
-  if (typeof value === "string") return cleanText(value, 600);
+  if (typeof value === "string") return cleanText(value, MAX_TOPIC_CONTEXT_LENGTH);
   if (!value || typeof value !== "object") return "";
   const fields = [
     ["词条", value.title],
@@ -112,16 +122,16 @@ function cleanTopicContext(value) {
   ];
   return fields
     .map(([label, content]) => {
-      const text = cleanText(content, 180);
+      const text = cleanText(content, 110);
       return text ? `${label}：${text}` : "";
     })
     .filter(Boolean)
     .join("\n")
-    .slice(0, 600);
+    .slice(0, MAX_TOPIC_CONTEXT_LENGTH);
 }
 
 function cleanVisitContext(value) {
-  return cleanText(value, 1_600).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+  return cleanText(value, MAX_VISIT_CONTEXT_LENGTH).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
 }
 
 function passwordMatches(input, expected) {
@@ -322,12 +332,31 @@ function normalizeChatEndpoint(value) {
   return /\/chat\/completions$/i.test(endpoint) ? endpoint : `${endpoint}/chat/completions`;
 }
 
-function engineEndpoints(engine) {
-  if (engine.provider === "qwen") {
-    const configured = normalizeChatEndpoint(process.env.QWEN_BASE_URL);
-    if (configured) return [configured];
+function qwenEndpointConfig(apiKey) {
+  const configured = normalizeChatEndpoint(process.env.QWEN_BASE_URL);
+  if (configured) return { endpoints: [configured], source: "workspace" };
+  if (cleanText(apiKey, 20).startsWith("sk-ws-")) {
+    return {
+      endpoints: [],
+      source: "missing-workspace-url",
+      error: "检测到千问业务空间 Key，但 Netlify 尚未配置 QWEN_BASE_URL。",
+    };
   }
-  return engine.endpoints;
+  return { endpoints: ENGINE_CONFIG["qwen-max"].endpoints, source: "default" };
+}
+
+function isRealtimeQuestion(message, explicitValue) {
+  if (explicitValue === true) return true;
+  if (explicitValue === false) return false;
+  const text = cleanText(message, MAX_MESSAGE_LENGTH);
+  return /天气|气温|温度|降雨|下雨|台风|新闻|热搜|汇率|股价|油价|价格|赛程|比分|航班|火车|地铁|路况|日期|几号|周几|现在几点|当前时间|最新|实时|附近|营业时间|排队/.test(text);
+}
+
+function attemptTimeout({ index, searchEnabled, remainingMs }) {
+  const target = index === 0
+    ? (searchEnabled ? SEARCH_PRIMARY_ENGINE_TIMEOUT_MS : PRIMARY_ENGINE_TIMEOUT_MS)
+    : FALLBACK_ENGINE_TIMEOUT_MS;
+  return Math.min(target, Math.max(0, remainingMs - 800));
 }
 
 function engineError(engine, status, detail = "") {
@@ -360,7 +389,7 @@ function engineSequence(preference, allowFallback) {
   return ids.map((id) => ENGINE_CONFIG[id]);
 }
 
-async function callEngine(engine, requestBody) {
+async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) {
   const apiKey = process.env[engine.apiKeyEnv];
   if (!apiKey) {
     return {
@@ -375,9 +404,41 @@ async function callEngine(engine, requestBody) {
     };
   }
 
+  const qwenConfig = engine.provider === "qwen" ? qwenEndpointConfig(apiKey) : null;
+  if (qwenConfig?.error) {
+    return {
+      ok: false,
+      failure: {
+        engine: engine.id,
+        engineName: engine.name,
+        code: "QWEN_BASE_URL_REQUIRED",
+        status: 503,
+        responseStatus: 503,
+        message: qwenConfig.error,
+        detail: "请将百炼控制台“按量付费 Base URL”填入 Netlify 的 QWEN_BASE_URL。",
+      },
+    };
+  }
+  if (timeoutMs < MIN_ATTEMPT_TIMEOUT_MS) {
+    return {
+      ok: false,
+      failure: {
+        engine: engine.id,
+        engineName: engine.name,
+        code: "ENGINE_TIME_BUDGET_EXHAUSTED",
+        status: 504,
+        responseStatus: 504,
+        message: "本次请求的剩余时间不足，未继续启动下一备用引擎",
+        detail: `已用时 ${Date.now() - requestStartedAt}ms`,
+      },
+    };
+  }
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  const endpoints = engineEndpoints(engine);
+  const timeoutReason = Object.assign(new Error("UPSTREAM_TIMEOUT"), { code: "UPSTREAM_TIMEOUT" });
+  const timeout = setTimeout(() => controller.abort(timeoutReason), timeoutMs);
+  const endpoints = qwenConfig?.endpoints || engine.endpoints;
+  const endpointSource = qwenConfig?.source || "provider-default";
   let fallbackResponse;
   let lastNetworkError;
   let usedEndpoint = endpoints[0];
@@ -425,7 +486,9 @@ async function callEngine(engine, requestBody) {
         engineName: engine.name,
         model: engine.model,
         endpoint: new URL(usedEndpoint).host,
+        endpointSource,
         status: upstream.status,
+        elapsedMs: Date.now() - requestStartedAt,
         message: upstreamMessage,
       });
       return {
@@ -459,9 +522,18 @@ async function callEngine(engine, requestBody) {
         },
       };
     }
-    return { ok: true, content };
+    console.log("AI 上游调用成功", {
+      engine: engine.id,
+      engineName: engine.name,
+      model: engine.model,
+      endpoint: new URL(usedEndpoint).host,
+      endpointSource,
+      elapsedMs: Date.now() - requestStartedAt,
+      searchEnabled: Boolean(requestBody.enable_search),
+    });
+    return { ok: true, content, endpointSource, elapsedMs: Date.now() - requestStartedAt };
   } catch (error) {
-    const timedOut = error?.name === "AbortError";
+    const timedOut = controller.signal.aborted && controller.signal.reason?.code === "UPSTREAM_TIMEOUT";
     const networkCode = cleanText(error?.cause?.code, 60);
     const networkMessage = cleanText(error?.message, 500) || "fetch failed";
     console.error(timedOut ? "AI 调用超时" : "AI 网络请求失败", {
@@ -471,6 +543,9 @@ async function callEngine(engine, requestBody) {
       status: timedOut ? 504 : 0,
       message: networkMessage,
       networkCode,
+      timeoutMs,
+      endpointSource,
+      elapsedMs: Date.now() - requestStartedAt,
     });
     return {
       ok: false,
@@ -479,8 +554,8 @@ async function callEngine(engine, requestBody) {
         engineName: engine.name,
         code: timedOut ? "ENGINE_TIMEOUT" : "ENGINE_NETWORK_ERROR",
         status: timedOut ? 504 : 0,
-        message: timedOut ? `${engine.name} 网络超时` : `连接 ${engine.name} 时发生网络错误`,
-        detail: networkMessage,
+        message: timedOut ? `${engine.name} 在 ${Math.ceil(timeoutMs / 1000)} 秒内未完成回复` : `连接 ${engine.name} 时发生网络错误`,
+        detail: timedOut ? `UPSTREAM_TIMEOUT after ${timeoutMs}ms` : networkMessage,
         networkCode,
       },
     };
@@ -561,6 +636,7 @@ export default async function handler(request) {
   const topicContext = cleanTopicContext(body?.topicContext);
   const visitContext = cleanVisitContext(body?.visitContext);
   const history = cleanHistory(body?.history);
+  const searchRequested = isRealtimeQuestion(message, body?.webSearch);
   const userContent = image
     ? [
         { type: "text", text: message || "请观察图片并自然回应。" },
@@ -570,7 +646,14 @@ export default async function handler(request) {
 
   const engines = engineSequence(body?.modelPreference, body?.allowFallback);
   const failures = [];
-  for (const engine of engines) {
+  const requestStartedAt = Date.now();
+  for (const [index, engine] of engines.entries()) {
+    const searchEnabled = engine.provider === "qwen" && searchRequested;
+    const timeoutMs = attemptTimeout({
+      index,
+      searchEnabled,
+      remainingMs: REQUEST_BUDGET_MS - (Date.now() - requestStartedAt),
+    });
     const requestBody = {
       model: engine.model,
       messages: [
@@ -579,18 +662,21 @@ export default async function handler(request) {
         { role: "user", content: userContent },
       ],
       temperature: resolveTemperature(profile, mode),
-      max_tokens: 900,
+      max_tokens: mode === "study" ? 520 : 420,
       stream: false,
     };
-    if (engine.provider === "qwen") {
+    if (searchEnabled) {
       requestBody.enable_search = true;
+      requestBody.search_options = { search_strategy: "turbo" };
+    }
+    if (engine.provider === "qwen") {
       requestBody.response_format = { type: "json_object" };
     }
     if (engine.provider === "deepseek") {
       requestBody.thinking = { type: "disabled" };
       requestBody.reasoning_effort = "none";
     }
-    const outcome = await callEngine(engine, requestBody);
+    const outcome = await callEngine(engine, requestBody, { timeoutMs, requestStartedAt });
     if (!outcome.ok) {
       failures.push(outcome.failure);
       continue;
@@ -602,7 +688,8 @@ export default async function handler(request) {
         ...humanizeReply(reply, { message, profile }),
         engine: engine.id,
         engineName: engine.name,
-        webSearchEnabled: engine.provider === "qwen",
+        webSearchEnabled: searchEnabled,
+        elapsedMs: outcome.elapsedMs,
         fallbacks: failures,
       });
     } catch (error) {
@@ -640,6 +727,7 @@ export default async function handler(request) {
     details: {
       message: failures.map((item) => `${item.engineName}: ${item.message}`).join("；"),
       status: failures.at(-1)?.status || 502,
+      elapsedMs: Date.now() - requestStartedAt,
     },
   });
 }

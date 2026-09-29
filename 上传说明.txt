@@ -5,7 +5,8 @@
 Netlify 环境变量：
 1. DEEPSEEK_API_KEY
 2. QWEN_API_KEY
-3. ADMIN_PASSWORD
+3. QWEN_BASE_URL（业务空间 Key 必需，从百炼控制台“按量付费 Base URL”复制）
+4. ADMIN_PASSWORD
 
 真实值只填写在 Netlify 后台。修改密码时更新 ADMIN_PASSWORD，然后重新部署。
 必须一并上传 assets、css、js、games、pages、netlify、_redirects、netlify.toml 和 package.json。
