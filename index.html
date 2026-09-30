@@ -10,7 +10,7 @@
   <link rel="preload" as="image" href="./assets/takagi.webp" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="./css/styles.css">
   <link rel="stylesheet" href="./css/continuity.css">
-  <link rel="stylesheet" href="./css/responsive.css?v=73">
+  <link rel="stylesheet" href="./css/responsive.css?v=75">
 </head>
 <body>
 
@@ -19,10 +19,11 @@
 <section class="chat"><div class="chat-head"><div class="avatar"><img src="./assets/takagi-avatar.webp" alt="" loading="eager" decoding="async" width="144" height="192"></div><div><h2>和高木聊一会儿</h2><p id="chat-context">放学教室 · 情景体验模式</p></div><button id="settings" aria-label="打开个性设置">个性设置</button></div><div class="mode-switch" role="group" aria-label="对话模式"><button data-mode="chat" aria-pressed="true"><strong>日常聊天</strong><small>场景、话题与临时记忆</small></button><button data-mode="study" aria-pressed="false"><strong>学习陪伴</strong><small>简单计算与思路整理</small></button></div><button class="profile-summary" id="profile-summary" type="button" aria-label="打开个性设置"></button><div class="chat-scroll" id="log" role="log" aria-live="polite"><div class="date">今天 · 放学后的时间</div><div class="intro">✧ 窗外的风吹过来，她转头看向你。</div><div class="message assistant"><span>高木</span><p>你来啦。今天旁边的座位，也给你留着哦。</p></div></div><div class="composer"><div class="ai-password-bar"><label for="ai-password">AI 访问密码</label><input id="ai-password" type="password" maxlength="200" autocomplete="current-password" placeholder="输入密码后使用在线引擎"><button id="forget-ai-password" type="button" hidden>清除</button></div><p id="password-status" class="password-status" role="status" aria-live="polite">密码仅保存在当前标签页；刷新后仍可用，关闭标签页或点击“清除”后失效。</p><div class="suggestions" id="suggestions"><button>今天有点累</button><button>一起去食堂？</button><button>别捉弄我啦</button></div><form id="chat-form"><textarea id="input" maxlength="1200" aria-label="聊天消息" placeholder="可以直接说复杂一点，我会沿着上一轮继续…"></textarea><div class="input-bottom"><span>Enter 发送 · Shift + Enter 换行</span><button id="send" aria-label="发送消息" disabled>↗</button></div></form><p class="footnote" id="ai-status">千问 3.8 Max · 可按需联网搜索 · 最近 12 条消息用于短期上下文</p></div></section></div>
 <section class="interactions"><div><h2>做点小事</h2><p id="action-hint">放学前的一点互动。</p></div><div class="actions" id="actions"><button data-action="wave"><span>♧</span>招招手</button><button data-action="tea"><span>☕</span>递杯茶</button><button data-action="stay"><span>♡</span>安静陪伴</button></div><em>明天，也见面吧。</em></section><section class="terms-preview"><div><span class="eyebrow">日常词条 · 设定摘录</span><h2>从一件小事开始聊</h2><p>点开一个词条，会出现具体开场、情境回应和可以继续追问的话题。</p></div><div id="term-preview" class="term-preview-grid"></div><button id="all-terms">查看全部词条</button></section></main><footer><span>《擅长捉弄人的高木同学》同人互动作品 · 非官方</span><span>公开访问 · 可以直接分享给朋友</span></footer>
 <dialog id="dialog" aria-labelledby="dialog-title"><button id="close-dialog" aria-label="关闭">×</button><h2 id="dialog-title"></h2><div id="dialog-body"></div></dialog>
-  <script src="./js/visit-memory.js?v=73"></script>
-  <script src="./js/dialogue-v2.js?v=73"></script>
-  <script src="./js/experience.js?v=73"></script>
-  <script src="./js/poetry.js?v=73"></script>
-  <script src="./js/responsive.js?v=73"></script>
+  <script src="./js/engine-session.js?v=75"></script>
+  <script src="./js/visit-memory.js?v=75"></script>
+  <script src="./js/dialogue-v2.js?v=74"></script>
+  <script src="./js/experience.js?v=75"></script>
+  <script src="./js/poetry.js?v=74"></script>
+  <script src="./js/responsive.js?v=75"></script>
 </body>
 </html>

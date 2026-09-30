@@ -38,13 +38,13 @@
     {src:'./assets/evening-study.webp',label:'旧版 AI · 夜灯自习',alt:'夜色中的教室，棕发少女在台灯旁写练习册'},
     {src:'./assets/rain-gallery.webp',label:'旧版 AI · 雨廊回眸',alt:'雨天教学楼走廊，棕发少女撑透明伞回头'},
     {src:'./assets/gm/takagi-sunset-close.jpg',label:'资料包 · 夕照近景',alt:'山坡夕照下，高木同学回头微笑的近景',supplied:true},
-    {src:'./assets/gm/takagi-manga-glance.gif',label:'资料包 · 漫画回眸',alt:'黑白漫画风格的高木同学动态回眸',supplied:true,fit:'contain'},
+    {src:'./assets/gm/takagi-manga-glance.gif',thumb:'./assets/gm/takagi-manga-glance-poster.webp',label:'资料包 · 漫画回眸',alt:'黑白漫画风格的高木同学动态回眸',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-winter-scarf.jpg',label:'资料包 · 冬日围巾',alt:'冬日里戴围巾的高木同学侧身看向前方',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-seaside-sunset.jpg',label:'资料包 · 海边等候',alt:'夕阳海边，高木同学回头说等你好久了',supplied:true},
     {src:'./assets/gm/takagi-sketch-duo.jpg',label:'资料包 · 线稿二人',alt:'高木同学与西片的淡色线稿',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-shadow-play.jpg',label:'资料包 · 灯下影子',alt:'墙面上高木同学与西片影子相遇的竖幅画面',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-outfits-strip.jpg',label:'资料包 · 日常剪影',alt:'高木同学不同日常服装与表情的横幅画面',supplied:true,fit:'contain'},
-    {src:'./assets/gm/takagi-memory.gif',label:'资料包 · 黑白片段',alt:'黑白漫画风格的高木同学与西片动态片段',supplied:true,fit:'contain'},
+    {src:'./assets/gm/takagi-memory.gif',thumb:'./assets/gm/takagi-memory-poster.webp',label:'资料包 · 黑白片段',alt:'黑白漫画风格的高木同学与西片动态片段',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-spring-classroom.jpg',label:'资料包 · 春日伸手',alt:'春日教室里，高木同学在窗边向前伸手',supplied:true},
     {src:'./assets/gm/takagi-collage-memories.jpg',label:'资料包 · 青春拼贴',alt:'高木同学主题的青春画面拼贴',supplied:true,fit:'contain'},
     {src:'./assets/gm/takagi-collage-scenes.jpg',label:'资料包 · 四季拼贴',alt:'高木同学主题的多场景横幅拼贴',supplied:true,fit:'contain'},
@@ -135,15 +135,17 @@
   interact=function(action){if(action!=='bet')return originalInteract(action);const answer=1+Math.floor(Math.random()*3);const body=document.createElement('div');body.append(textEl('p','我选好了 1、2、3 中的一个数字。你只有一次机会，要猜哪个？'));const options=document.createElement('div');options.className='guess-options';body.append(options);[1,2,3].forEach(value=>{const button=textEl('button',String(value));options.append(button);button.onclick=()=>{options.querySelectorAll('button').forEach(b=>b.disabled=true);const line=value===answer?`猜对了，是 ${answer}。这局算你赢。`:`我选的是 ${answer}。这局被我赢了一次，要再试试吗？`;body.append(textEl('p',line));speak(line,'playful');add('assistant',line);const again=textEl('button','再玩一局','setting');again.onclick=()=>interact('bet');body.append(again)}});openDialog('数字小挑战',body);return{action:'bet',reply:'数字挑战已开始'}};
 })();
 
-const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.body.append(script)});
+const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>{script.remove();reject(new Error('功能脚本加载失败，请再次点击重试。'))};document.body.append(script)});
 let gamesPromise=null,sidebarPromise=null,sidebarReady=false;
-const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=73'));
-const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=73').then(()=>{sidebarReady=true}));
+const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=75').catch(error=>{gamesPromise=null;throw error}));
+const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=75').then(()=>{sidebarReady=true}).catch(error=>{sidebarPromise=null;throw error}));
+const warmGames=()=>loadGames().catch(()=>{});
+const warmSidebar=()=>loadSidebar().catch(()=>{});
 const gameAnchor=document.querySelector('.interactions');
-if(gameAnchor&&'IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();loadGames()}},{rootMargin:'700px'});observer.observe(gameAnchor)}else setTimeout(loadGames,1200);
-setTimeout(loadGames,6000);
+if(gameAnchor&&'IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();warmGames()}},{rootMargin:'700px'});observer.observe(gameAnchor)}else setTimeout(warmGames,1200);
+if(matchMedia('(min-width:1025px)').matches)setTimeout(warmGames,6000);
 const arcadeTrigger=document.getElementById('arcade-open');
-if(arcadeTrigger){const warm=()=>loadGames();arcadeTrigger.addEventListener('pointerenter',warm,{once:true});arcadeTrigger.addEventListener('focus',warm,{once:true});arcadeTrigger.addEventListener('click',()=>{arcadeTrigger.disabled=true;loadGames().then(()=>{const shelf=document.querySelector('.arcade-shelf');if(!shelf)return;shelf.open=true;shelf.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});shelf.querySelector('summary')?.focus()}).finally(()=>{arcadeTrigger.disabled=false})})}
-['omikuji-open','memories-open'].forEach(id=>{const trigger=document.getElementById(id);if(!trigger)return;const warm=()=>loadSidebar();trigger.addEventListener('pointerenter',warm,{once:true});trigger.addEventListener('focus',warm,{once:true});trigger.addEventListener('click',function resume(event){if(sidebarReady)return;event.preventDefault();event.stopImmediatePropagation();loadSidebar().then(()=>trigger.click())},{capture:true})});
-setTimeout(loadSidebar,9000);
+if(arcadeTrigger){arcadeTrigger.addEventListener('pointerenter',warmGames,{once:true});arcadeTrigger.addEventListener('focus',warmGames,{once:true});arcadeTrigger.addEventListener('click',()=>{arcadeTrigger.disabled=true;loadGames().then(()=>{const shelf=document.querySelector('.arcade-shelf');if(!shelf)return;shelf.open=true;shelf.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});shelf.querySelector('summary')?.focus()}).catch(error=>speak(error.message,'warm')).finally(()=>{arcadeTrigger.disabled=false})})}
+['omikuji-open','memories-open'].forEach(id=>{const trigger=document.getElementById(id);if(!trigger)return;trigger.addEventListener('pointerenter',warmSidebar,{once:true});trigger.addEventListener('focus',warmSidebar,{once:true});trigger.addEventListener('click',function resume(event){if(sidebarReady)return;event.preventDefault();event.stopImmediatePropagation();loadSidebar().then(()=>trigger.click()).catch(error=>speak(error.message,'warm'))},{capture:true})});
+if(matchMedia('(min-width:1025px)').matches)setTimeout(warmSidebar,9000);
 

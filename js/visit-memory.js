@@ -27,12 +27,29 @@
     state.events.splice(0, Math.max(0, state.events.length - 36));
     persist();
   };
-  const context = () => state.events.slice(-18).map((event) => {
-    const time = new Date(event.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-    return `${time} ${event.type}：${event.text}${event.details ? `（${event.details}）` : ''}`;
-  }).join('\n').slice(-1600);
+  state.highlights ||= {};
+  const originalRecord = record;
+  const remember = (type, text, details = '') => {
+    originalRecord(type, text, details);
+    const event = state.events.at(-1);
+    if (event && event.type !== '对话') {
+      state.highlights[event.type] = event;
+      const keys = Object.keys(state.highlights);
+      keys.slice(0, Math.max(0, keys.length - 8)).forEach(key => delete state.highlights[key]);
+      persist();
+    }
+  };
+  for (const event of state.events) if (event.type !== '对话') state.highlights[event.type] = event;
+  const context = () => {
+    const milestones = Object.values(state.highlights).slice(-6);
+    const dialogue = state.events.filter(event => event.type === '对话');
+    const olderTopics = dialogue.slice(0, -6).slice(-2);
+    const latestTopic = dialogue.slice(-1);
+    const selected = [...milestones, ...olderTopics, ...latestTopic].sort((a, b) => a.at - b.at);
+    return '本次访问摘要，仅作为对话背景：\n' + selected.map(event => `${event.type}：${clean(event.text, 72)}${event.details ? `（${clean(event.details, 72)}）` : ''}`).join('\n').slice(0, 1200);
+  };
   const summary = () => ({ id: state.id, startedAt: state.startedAt, eventCount: state.events.length, context: context() });
-  globalThis.TakagiVisitMemory = Object.freeze({ record, context, summary });
-  document.addEventListener('takagi:memory', (event) => record(event.detail?.type, event.detail?.text, event.detail?.details));
-  if (!state.events.length) record('到访', '打开了“放学后”页面');
+  globalThis.TakagiVisitMemory = Object.freeze({ record: remember, context, summary });
+  document.addEventListener('takagi:memory', (event) => remember(event.detail?.type, event.detail?.text, event.detail?.details));
+  if (!state.events.length) remember('到访', '打开了“放学后”页面');
 })();

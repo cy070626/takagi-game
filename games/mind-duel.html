@@ -1,13 +1,13 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>高木同学·猜心对决 FINAL V4.2</title>
+<title>高木同学·猜心对决 V4.2H.4</title>
 <style>
 *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,"Noto Sans SC",sans-serif;color:#463832;background:#d7bea8}
 button{font:inherit} .game{min-height:100dvh;position:relative;overflow:hidden;padding:18px 18px 210px}
-.bg{position:fixed;inset:0;background:url("../assets/mind-duel-bg.webp") center 28%/auto 94% no-repeat;z-index:-3}
+.bg{position:fixed;inset:0;background:url("../assets/mind-duel-v42-bg.webp") center 28%/auto 94% no-repeat;z-index:-3}
 .tint{position:fixed;inset:0;background:linear-gradient(#fff1,#fff0 55%,#53301d22);z-index:-2}
 .top{display:flex;justify-content:space-between;gap:8px;position:relative;z-index:2}
-.pill,.panel,.bubble,.sheet .box{background:#fff9f0f5;border:1px solid #fff;border-radius:22px;box-shadow:0 8px 28px #4c2d2030}
+.pill,.panel,.bubble,.sheet .box{background:#fff9f0e9;border:1px solid #fff;border-radius:22px;box-shadow:0 8px 28px #4c2d2030;backdrop-filter:blur(8px)}
 .pill{padding:10px 14px;font-weight:850} .title{text-align:center;margin:18px auto 0;width:max-content;max-width:88%;padding:8px 17px;background:#fff8f0c8;border-radius:18px;color:#a15768;font-weight:900;font-size:20px}
 .bubble{margin:12px 0 0 auto;width:min(48%,330px);padding:12px 15px;line-height:1.45;font-weight:700}
 .panel{position:fixed;left:3%;right:3%;bottom:max(12px,env(safe-area-inset-bottom));padding:16px;z-index:5;max-height:55dvh;overflow:auto}
@@ -51,7 +51,7 @@ body{overscroll-behavior:none}
 .bubble{width:min(43%,290px);margin:10px 0 0 3%;font-size:13px}
 .tools{right:14px}
 .hud2{position:relative;z-index:3;margin:8px auto 0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:94%}
-.hudTag{background:rgba(72,48,41,.86);color:#fff;border:1px solid rgba(255,255,255,.32);border-radius:999px;padding:6px 10px;font-size:11px}
+.hudTag{background:rgba(72,48,41,.74);color:#fff;border:1px solid rgba(255,255,255,.32);border-radius:999px;padding:6px 10px;font-size:11px;backdrop-filter:blur(7px)}
 .hudTag b{font-weight:900}
 .settingHint{margin-top:5px;font-size:11px;color:#806963}
 @media(max-width:430px){
@@ -164,7 +164,7 @@ box-shadow:0 5px 15px rgba(68,42,35,.08)}
 .stageSteps b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#ddd1ca}
 .stageSteps b.on{background:#d75c83;color:white}
 .chatStage{top:188px!important;bottom:42dvh!important;left:8px!important;right:8px!important;
-background:rgba(255,248,241,.22)!important;border:1px solid rgba(255,255,255,.28);
+background:rgba(255,248,241,.16)!important;border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(1px);
 padding:9px 5px 30px!important}
 .chatLine{gap:7px!important;margin:10px 0!important;align-items:flex-end!important}
 .chatAvatar{width:50px!important;height:50px!important;flex-basis:50px!important;border:3px solid white!important}
@@ -190,9 +190,25 @@ padding:9px 5px 30px!important}
  .panel{max-height:45dvh!important}.tools{bottom:calc(45dvh + 8px)!important}
  .chatAvatar{width:43px!important;height:43px!important;flex-basis:43px!important}
 }
+
+/* V4.2H.4.1：仅保留左上角总比分。隐藏头像下方的重复计分条，避免两套显示造成同步误解。 */
+.scoreCenter,
+.score-center,
+.playerScoreRow,
+.player-score-row,
+.duelScoreRow,
+.duel-score-row,
+.versusScore,
+.versus-score,
+.score-versus,
+#scoreCenter,
+#playerScoreRow,
+#duelScoreRow,
+#versusScore { display:none !important; }
+
 </style>
 <style id="avatar-photo-patch">
-:root{--nishi-avatar:url("../assets/mind-duel-player.webp");--takagi-avatar:url("../assets/mind-duel-takagi.webp")}
+:root{--nishi-avatar:url("../assets/mind-duel-v42-nishikata.webp");--takagi-avatar:url("../assets/mind-duel-v42-takagi.webp")}
 .duelAvatar,.chatAvatar{
   background-position:center!important;background-repeat:no-repeat!important;
   background-size:cover!important;color:transparent!important;
@@ -210,7 +226,7 @@ padding:9px 5px 30px!important}
  radial-gradient(circle at 70% 28%,rgba(218,239,249,.28),transparent 32%),
  rgba(255,248,242,.12)!important;
 }
-.chatMsg{background-color:rgba(255,250,245,.94)}
+.chatMsg{backdrop-filter:blur(4px)}
 </style>
 
 
@@ -265,10 +281,9 @@ button,.card,.actionMini span{touch-action:manipulation}
 }
 </style>
 
-<link rel="stylesheet" href="../css/responsive-games.css?v=70">
-</head><body><div class="game"><div class="bg"></div><div class="tint"></div><div class="faceSafe" aria-hidden="true"></div><div class="toast" id="toast"></div>
+<link rel="stylesheet" href="../css/responsive-games.css?v=74"></head><body><div class="game"><div class="bg"></div><div class="tint"></div><div class="faceSafe" aria-hidden="true"></div><div class="toast" id="toast"></div>
 <div class="top"><div class="pill">西片 <b id="me">0</b> : <b id="her">0</b> 高木</div><div class="pill">第 <b id="round">1</b> 回合</div></div>
-<div class="title">高木同学 · 猜心对决 ♡ <small style="font-size:9px">FINAL V4.2</small></div>
+<div class="title">高木同学 · 猜心对决 ♡ <small style="font-size:9px">V4.2H.4</small></div>
 <div class="scoreDuel">
  <div class="duelPerson n"><span class="duelAvatar">西</span><span>西片</span><span class="duelScore" id="chatScoreN">0</span></div>
  <div class="roundCenter" id="chatRound">第 1 回合</div>
@@ -292,13 +307,22 @@ button,.card,.actionMini span{touch-action:manipulation}
 <div class="actionMini" id="actionMini" aria-label="下一步心理操作预览"><span>💬 镇定<br>表现自然</span><span>≫ 误导<br>故意引导</span><span>🔍 反猜<br>试探反向</span><span>⚡ 亮牌<br>直接公开</span></div>
 </div></div>
 <div class="sheet" id="helpSheet"><div class="box"><h2>怎么玩？</h2><p>每题都经历固定的三段流程，下一题只会在本题完全结算后生成。</p>
+<div style="margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.55);line-height:1.65">
+  <b>计分规则</b><br>
+  西片成功骗过高木：+1 分<br>
+  高木最终读中西片：+2 分<br>
+  开启“标准心理奖励”时，反猜成功额外 +1 分。<br>
+  达到目标分数后，若启用“领先2分”，需要领先对方至少 2 分才能获胜。
+</div>
 <p><b>STEP 1 · 想法牌</b>：根据题目秘密选择 A / B / C，高木此时看不到你的真实答案。<br><b>STEP 2 · 心理战</b>：高木先公开一次试探，你再决定保持镇定、故意误导、反猜高木或直接亮牌。公开试探可能是她的真实判断，也可能是假动作。<br><b>STEP 3 · 亮牌</b>：双方同时公开最终选择并立即计分。看完结果后，由你点击“我看懂了 · 下一题”，才会生成下一道不同的题目。</p>
 <p class="small"><b>四种心理操作：</b><br>
 😐 保持镇定：不主动制造额外信号。<br>
 😏 故意误导：尝试把高木的最终判断引向错误选项。<br>
 🧐 反猜高木：额外预测她最终会猜 A / B / C；标准心理奖励下，反猜命中可额外得分。<br>
 🃏 直接亮牌：跳过继续周旋，高木以当前公开试探作为最终判断。</p>
-<p class="small"><b>看顶部状态条：</b> 🏁目标分数、🧠难度、🎭假试探频率、♡心理奖励、⚖延长赛规则会实时显示。设置修改后会立即同步。</p><button class="close" data-close>我知道了</button></div></div>
+<p class="small"><b>看顶部状态条：</b> 🏁目标分数、🧠难度、🎭假试探频率、♡心理奖励、⚖延长赛规则会实时显示。设置修改后会立即同步。</p><button class="close" data-close>我知道了</button>
+
+</div></div>
 <div class="sheet" id="settingsSheet"><div class="box"><h2>对局设置</h2><p class="small"><b>修改后立即生效。</b> 难度、假试探与心理奖励从下一次判断开始使用；目标分数与延长赛从下一次结算开始使用。<br>每题只结算一次。达到目标分数后结束；开启“领先2分”时，若双方同时进入赛点，则继续比赛直到一方领先2分。</p>
 <div class="setting"><b>目标分数</b><div class="choices" id="targets"><button data-v="5">5分速战</button><button data-v="7" class="on">7分标准</button><button data-v="12">12分长局</button></div></div>
 <div class="setting"><b>难度</b><div class="choices" id="diffs"><button data-v="入门">入门</button><button data-v="普通" class="on">普通</button><button data-v="认真">认真</button><button data-v="高木模式">高木模式♡</button></div><div class="small">入门：主要随机判断。普通：参考最近几轮选择。认真：更重视近期与同类题偏好。高木模式♡：使用更长历史，并更常使用假试探。<br><b>任何难度都不会读取本题尚未公开的秘密牌。</b></div></div>
@@ -558,32 +582,137 @@ function render(){
 }
 function startMind(){
  if(state.choice===null)return;
- state.probe=historicalGuess();
+ state.probe=hmStrategicProbe();
  let p=state.feint==="off"?0:state.feint==="normal"?.30:.14;if(state.diff==="高木模式")p+=.10;
  if(Math.random()<p){let x=Math.floor(Math.random()*3);state.probe=x}
  state.phase="mind";render();
 }
+
+/* V4.2H.4: 人类式判断增强层。页面、题库、三STEP与交互结构保持 V4.2。 */
+const HUMAN_MIND={
+  deception:[[1,1,1],[1,1,1],[1,1,1]],
+  repeatStay:1, repeatSwitch:1,
+  internal:[1/3,1/3,1/3],
+  reason:""
+};
+function hmNorm(v){
+  const z=v.reduce((a,b)=>a+Math.max(.001,b),0);
+  return v.map(x=>Math.max(.001,x)/z);
+}
+function hmArgmax(v){return v.indexOf(Math.max(...v))}
+function hmWeightedPick(p){
+  let r=Math.random(),c=0;
+  for(let i=0;i<p.length;i++){c+=p[i];if(r<=c)return i}
+  return p.length-1;
+}
+function hmBelief(){
+  const h=state.history||[], q=current()||{}, cat=q.cat||"";
+  // 题目本能先验只做轻度引导，避免 AI 仅靠选项位置。
+  let w=cat==="高木互动"?[.31,.45,.24]:
+        cat==="校园"?[.34,.41,.25]:
+        (cat==="中式文化"||cat==="日式文化")?[.35,.38,.27]:
+        [.34,.39,.27];
+
+  // 长期偏好
+  h.forEach((x,k)=>{
+    const age=(k+1)/Math.max(1,h.length);
+    w[x.choice]+=.08+.10*age;
+  });
+
+  // 最近行为权重更高
+  h.slice(-7).forEach((x,k)=>{
+    w[x.choice]+=.16+.12*(k+1)/Math.max(1,Math.min(7,h.length));
+  });
+
+  // 相似情境记忆
+  h.filter(x=>x.cat===cat).slice(-6).forEach(x=>w[x.choice]+=.25);
+
+  // 人会意识到玩家自己也知道“连续重复”这件事。
+  if(h.length>=2 && h.at(-1).choice===h.at(-2).choice){
+    const r=h.at(-1).choice;
+    const switchRate=HUMAN_MIND.repeatSwitch/(HUMAN_MIND.repeatSwitch+HUMAN_MIND.repeatStay);
+    w[r]*=(1-.26*switchRate);
+    HUMAN_MIND.reason=`你刚才连续选过 ${L(r)}，我会考虑你这次可能故意换掉。`;
+  }else{
+    const top=hmArgmax(w);
+    HUMAN_MIND.reason=`结合最近和类似情境，我目前更留意 ${L(top)}。`;
+  }
+  HUMAN_MIND.internal=hmNorm(w);
+  return HUMAN_MIND.internal.slice();
+}
+function hmStrategicProbe(){
+  const p=hmBelief(), ranked=[0,1,2].sort((a,b)=>p[b]-p[a]);
+  const real=ranked[0];
+
+  // 兼容 V4.2 设置语义：关闭即严格关闭。
+  let rate=state.feint==="off"?0:state.feint==="normal"?.32:.16;
+  if(state.diff==="高木模式" && state.feint!=="off") rate+=.10;
+  const feint=Math.random()<rate;
+  HUMAN_MIND.wasFeint=feint;
+  HUMAN_MIND.realBeforeReaction=real;
+  if(!feint)return real;
+
+  // 假试探优先第二合理候选；第二、第三非常接近时才保留少量变化。
+  if(p[ranked[1]]-p[ranked[2]]>.08)return ranked[1];
+  return Math.random()<.8?ranked[1]:ranked[2];
+}
+function hmFinalGuess(){
+  if(state.action==="reveal") return state.probe;
+
+  let p=hmBelief();
+
+  if(state.action==="mislead" && state.misleadTarget!==null){
+    const t=state.misleadTarget;
+    const learned=hmNorm(HUMAN_MIND.deception[t]);
+
+    // 低难度更容易相信表面误导；高难度更重视玩家过去“怎么骗人”。
+    const surface=state.diff==="入门"?.42:state.diff==="普通"?.32:state.diff==="认真"?.20:.11;
+    const memory=state.diff==="高木模式"?.42:state.diff==="认真"?.28:state.diff==="普通"?.14:.06;
+    p[t]+=surface;
+    p=p.map((x,i)=>x+memory*learned[i]);
+
+    // 连续使用同一个误导目标会逐渐变得可疑。
+    const uses=(state.history||[]).slice(-8).filter(x=>x.action==="mislead"&&x.misleadTarget===t).length;
+    if(uses>=2)p[t]*=state.diff==="高木模式"?.62:.80;
+  }
+  p=hmNorm(p);
+
+  // 高难度稳定利用信息；低难度保留人的犹豫，而非纯粹随机改答案。
+  if(state.diff==="高木模式")return hmArgmax(p);
+  if(state.diff==="认真")return Math.random()<.84?hmArgmax(p):hmWeightedPick(p);
+  if(state.diff==="普通")return Math.random()<.70?hmArgmax(p):hmWeightedPick(p);
+  return hmWeightedPick(p);
+}
+function hmLearnBeforePush(){
+  const h=state.history||[];
+  if(h.length>=2 && h.at(-1).choice===h.at(-2).choice){
+    if(state.choice===h.at(-1).choice)HUMAN_MIND.repeatStay++;
+    else HUMAN_MIND.repeatSwitch++;
+  }
+  if(state.action==="mislead" && state.misleadTarget!==null){
+    HUMAN_MIND.deception[state.misleadTarget][state.choice]+=1;
+  }
+}
+
 function resolve(){
  if(!state.action)return;
  if(state.action==="mislead" && state.misleadTarget===null)return;
  if(state.action==="counter" && state.counter===null)return;
 
- let finalGuess=state.action==="reveal"?state.probe:historicalGuess();
-
- // 故意误导：玩家明确指定一个“假目标”。高木是否上当由难度决定。
- if(state.action==="mislead"){
-   const fooledChance=state.diff==="高木模式"?.22:state.diff==="认真"?.38:.55;
-   if(Math.random()<fooledChance) finalGuess=state.misleadTarget;
- }
+ let finalGuess=hmFinalGuess();
 
  let hit=finalGuess===state.choice, pm=0,ph=0;
- if(hit)ph++; else pm++;
- if(state.reward==="standard" && state.action==="counter" && state.counter===finalGuess)pm++;
+ // 公平计分：玩家天然掌握自己的真实牌且拥有心理操作，因此高木读中时奖励更高。
+ // 基础：西片成功躲过判断 +1；高木成功读中 +2。
+ if(hit)ph+=2; else pm+=1;
+ // 标准心理奖励保留，但降低额外收益，避免玩家优势再次被放大。
+ if(state.reward==="standard" && state.action==="counter" && state.counter===finalGuess)pm+=1;
  state.me+=pm;state.her+=ph;
  state.stats.choices[state.choice]++;
  if(hit)state.stats.herHits++;
  if(state.action==="counter"){state.stats.counters++;if(state.counter===finalGuess)state.stats.counterHits++}
  if(state.action==="mislead")state.stats.misleads++;
+ hmLearnBeforePush();
  state.history.push({choice:state.choice,cat:current().cat,action:state.action,misleadTarget:state.misleadTarget,counter:state.counter,guess:finalGuess,hit});
  state.lastResult={finalGuess,hit,pm,ph,misleadTarget:state.misleadTarget,counter:state.counter};
  state.phase="result";render();
@@ -628,4 +757,27 @@ $("rematch").onclick=()=>{
  $("reportSheet").classList.remove("show");newRound();
 };
 newRound();
-</script></body></html>
+</script><script>
+(function(){
+  function hideDuplicateScore(){
+    const els=[...document.querySelectorAll("body *")];
+    const candidates=els.filter(el=>{
+      const t=(el.innerText||"").replace(/\s+/g," ").trim();
+      if(!t.includes("西片")||!t.includes("高木")) return false;
+      const r=el.getBoundingClientRect();
+      if(r.height<45||r.height>150||r.width<250) return false;
+      if(t.includes("7分")||t.includes("普通")||t.includes("领先2分")) return false;
+      if(t.match(/西片\s*\d+\s*第?\s*\d+\s*回合\s*\d+\s*高木/) ||
+         (el.querySelectorAll("img").length>=2 && /\d/.test(t))) return true;
+      return false;
+    });
+    if(candidates.length){
+      candidates.sort((a,b)=>a.getBoundingClientRect().height-b.getBoundingClientRect().height);
+      candidates[0].style.display="none";
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",hideDuplicateScore);
+  else hideDuplicateScore();
+})();
+</script>
+</body></html>

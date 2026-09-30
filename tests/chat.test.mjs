@@ -95,6 +95,25 @@ test("默认调用千问 3.8 Max，并开启联网搜索和统一提示词", asy
   assert.equal(reply.webSearchEnabled, true);
 });
 
+test("临时上游错误会在同一引擎重试两次后恢复", async () => {
+  process.env.ADMIN_PASSWORD = "configured-secret";
+  process.env.QWEN_API_KEY = "test-qwen-api-key";
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    if (calls < 3) return Response.json({ error: { message: "temporary unavailable" } }, { status: 503 });
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ text: "这次接上了。" }) } }] });
+  };
+
+  const response = await handler(request({ message: "继续说", password: "configured-secret", modelPreference: "qwen-max" }));
+  const data = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(calls, 3);
+  assert.equal(data.engineName, "千问 3.8 Max");
+  assert.equal(data.text, "这次接上了。");
+});
+
 test("千问账户级失败后直接切换到另一服务商", async () => {
   process.env.ADMIN_PASSWORD = "configured-secret";
   process.env.QWEN_API_KEY = "test-qwen-api-key";

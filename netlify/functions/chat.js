@@ -49,6 +49,9 @@ const PRIMARY_ENGINE_TIMEOUT_MS = 15_000;
 const SEARCH_PRIMARY_ENGINE_TIMEOUT_MS = 17_000;
 const FALLBACK_ENGINE_TIMEOUT_MS = 9_000;
 const MIN_ATTEMPT_TIMEOUT_MS = 2_500;
+const MAX_TRANSIENT_RETRIES = 2;
+const RETRYABLE_UPSTREAM_STATUSES = new Set([408, 425, 500, 502, 503, 504]);
+const RETRY_DELAYS_MS = [160, 360];
 const PROVIDER_WIDE_FAILURE_CODES = new Set([
   "ENGINE_NOT_CONFIGURED",
   "QWEN_BASE_URL_REQUIRED",
@@ -80,6 +83,8 @@ function json(status, data) {
     },
   });
 }
+
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function cleanText(value, maxLength) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -451,38 +456,59 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
   const controller = new AbortController();
   const timeoutReason = Object.assign(new Error("UPSTREAM_TIMEOUT"), { code: "UPSTREAM_TIMEOUT" });
   const timeout = setTimeout(() => controller.abort(timeoutReason), timeoutMs);
+  const engineDeadline = Date.now() + timeoutMs;
   const endpoints = qwenConfig?.endpoints || engine.endpoints;
   const endpointSource = qwenConfig?.source || "provider-default";
   let fallbackResponse;
   let lastNetworkError;
   let usedEndpoint = endpoints[0];
+  let requestAttempts = 0;
 
   try {
     for (let index = 0; index < endpoints.length; index += 1) {
-      try {
-        usedEndpoint = endpoints[index];
-        const candidate = await fetch(usedEndpoint, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
-        const tryNextRegion = engine.provider === "qwen"
-          && index < endpoints.length - 1
-          && [401, 403, 404].includes(candidate.status);
-        if (tryNextRegion) {
-          fallbackResponse ||= candidate;
-          continue;
+      usedEndpoint = endpoints[index];
+      for (let retry = 0; retry <= MAX_TRANSIENT_RETRIES; retry += 1) {
+        requestAttempts += 1;
+        try {
+          const candidate = await fetch(usedEndpoint, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+          });
+          const delay = RETRY_DELAYS_MS[retry] || 0;
+          const canRetry = RETRYABLE_UPSTREAM_STATUSES.has(candidate.status)
+            && retry < MAX_TRANSIENT_RETRIES
+            && Date.now() + delay + 1_500 < engineDeadline;
+          if (canRetry) {
+            await wait(delay);
+            continue;
+          }
+          const tryNextRegion = engine.provider === "qwen"
+            && index < endpoints.length - 1
+            && [401, 403, 404].includes(candidate.status);
+          if (tryNextRegion) {
+            fallbackResponse ||= candidate;
+            break;
+          }
+          fallbackResponse = candidate;
+          break;
+        } catch (error) {
+          if (error?.name === "AbortError") throw error;
+          lastNetworkError = error;
+          const delay = RETRY_DELAYS_MS[retry] || 0;
+          const canRetry = retry < MAX_TRANSIENT_RETRIES && Date.now() + delay + 1_500 < engineDeadline;
+          if (canRetry) {
+            await wait(delay);
+            continue;
+          }
+          break;
         }
-        fallbackResponse = candidate;
-        break;
-      } catch (error) {
-        if (error?.name === "AbortError") throw error;
-        lastNetworkError = error;
       }
+      if (fallbackResponse) break;
     }
 
     const upstream = fallbackResponse;
@@ -502,6 +528,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
         endpoint: new URL(usedEndpoint).host,
         endpointSource,
         status: upstream.status,
+        attempts: requestAttempts,
         elapsedMs: Date.now() - requestStartedAt,
         message: upstreamMessage,
       });
@@ -512,6 +539,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
           engineName: engine.name,
           code: classified.code,
           status: upstream.status,
+          retryCount: Math.max(0, requestAttempts - 1),
           responseStatus: classified.status,
           message: classified.error,
           detail: upstreamMessage,
@@ -530,6 +558,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
           engine: engine.id,
           engineName: engine.name,
           code: "ENGINE_EMPTY_REPLY",
+          retryCount: Math.max(0, requestAttempts - 1),
           status: 502,
           message: `${engine.name} 返回了空内容`,
           detail: `finish_reason=${finishReason}`,
@@ -543,9 +572,10 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
       endpoint: new URL(usedEndpoint).host,
       endpointSource,
       elapsedMs: Date.now() - requestStartedAt,
+      attempts: requestAttempts,
       searchEnabled: Boolean(requestBody.enable_search),
     });
-    return { ok: true, content, endpointSource, elapsedMs: Date.now() - requestStartedAt };
+    return { ok: true, content, endpointSource, elapsedMs: Date.now() - requestStartedAt, attempts: requestAttempts };
   } catch (error) {
     const timedOut = controller.signal.aborted && controller.signal.reason?.code === "UPSTREAM_TIMEOUT";
     const networkCode = cleanText(error?.cause?.code, 60);
@@ -558,6 +588,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
       message: networkMessage,
       networkCode,
       timeoutMs,
+      attempts: requestAttempts,
       endpointSource,
       elapsedMs: Date.now() - requestStartedAt,
     });
@@ -567,6 +598,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
         engine: engine.id,
         engineName: engine.name,
         code: timedOut ? "ENGINE_TIMEOUT" : "ENGINE_NETWORK_ERROR",
+        retryCount: Math.max(0, requestAttempts - 1),
         status: timedOut ? 504 : 0,
         message: timedOut ? `${engine.name} 在 ${Math.ceil(timeoutMs / 1000)} 秒内未完成回复` : `连接 ${engine.name} 时发生网络错误`,
         detail: timedOut ? `UPSTREAM_TIMEOUT after ${timeoutMs}ms` : networkMessage,
@@ -578,7 +610,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
   }
 }
 
-export default async function handler(request) {
+async function handleChat(request) {
   if (request.method !== "POST") {
     return json(405, { error: "只接受 POST 请求" });
   }
@@ -707,6 +739,7 @@ export default async function handler(request) {
         engineName: engine.name,
         webSearchEnabled: searchEnabled,
         elapsedMs: outcome.elapsedMs,
+        retryCount: Math.max(0, outcome.attempts - 1),
         fallbacks: failures,
       });
     } catch (error) {
@@ -747,4 +780,14 @@ export default async function handler(request) {
       elapsedMs: Date.now() - requestStartedAt,
     },
   });
+}
+
+// Carry one identifier through browser feedback and Netlify logs, without logging credentials.
+export default async function handler(request) {
+  const requestId = cleanText(request.headers.get("x-nf-request-id"), 100) || globalThis.crypto.randomUUID();
+  const headers = new Headers(request.headers);
+  headers.set("x-nf-request-id", requestId);
+  const response = await handleChat(new Request(request, { headers }));
+  const payload = await response.json();
+  return json(response.status, { ...payload, requestId });
 }
