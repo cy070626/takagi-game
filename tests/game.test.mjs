@@ -33,8 +33,8 @@ test("小游戏默认优先千问并在失败后切换 DeepSeek", async () => {
   const result = await handler(request({ game: "lateral", storyId: "umbrella", question: "和朋友有关吗", password: "configured-secret", modelPreference: "qwen-max", allowFallback: true }));
   const data = await result.json();
   assert.equal(result.status, 200);
-  assert.deepEqual(models, ["qwen3.8-max", "qwen3.8-flash", "deepseek-v4-pro"]);
+  assert.deepEqual(models, ["qwen3.8-max", "deepseek-v4-pro"]);
   assert.equal(data.engineName, "DeepSeek Pro");
   assert.equal(data.answer, "是");
-  assert.equal(data.fallbacks.length, 2);
+  assert.equal(data.fallbacks.length, 1);
 });

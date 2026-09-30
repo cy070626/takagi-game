@@ -12,10 +12,11 @@ const ORDER = Object.freeze({
   "deepseek-pro": ["deepseek-pro", "deepseek-flash", "qwen-max", "qwen-flash"],
   "deepseek-flash": ["deepseek-flash", "deepseek-pro", "qwen-max", "qwen-flash"],
 });
-const GAME_REQUEST_BUDGET_MS = 38_000;
-const GAME_PRIMARY_TIMEOUT_MS = 16_000;
-const GAME_FALLBACK_TIMEOUT_MS = 8_000;
+const GAME_REQUEST_BUDGET_MS = 26_000;
+const GAME_PRIMARY_TIMEOUT_MS = 14_000;
+const GAME_FALLBACK_TIMEOUT_MS = 9_000;
 const GAME_MIN_ATTEMPT_TIMEOUT_MS = 3_000;
+const PROVIDER_WIDE_FAILURE_CODES = new Set(["ENGINE_NOT_CONFIGURED", "QWEN_BASE_URL_REQUIRED", "ENGINE_TIMEOUT", "ENGINE_NETWORK_ERROR"]);
 const STORIES = Object.freeze({
   umbrella: "她在等同样没有带伞的朋友。雨大后，朋友会放弃独自跑回去，两个人就能一起等家人来接。",
   bell: "这是一次安静自习，墙上的时钟已经到了约定结束的时间，铃声设备当天正在检修。",
@@ -61,6 +62,14 @@ function parseReply(content) {
     reply: clean(data?.reply, 180) || "这个方向和真相的关系不大。",
     progress: Math.max(0, Math.min(100, Number(data?.progress) || 0)),
   };
+}
+
+function isProviderWideFailure(failure) {
+  if (PROVIDER_WIDE_FAILURE_CODES.has(failure.code)) return true;
+  if (failure.code !== "ENGINE_REJECTED") return false;
+  return [401, 403, 429].includes(failure.status)
+    || failure.status >= 500
+    || /quota|balance|insufficient|exhausted|good standing|overdue|欠费|额度|余额|权限|access denied/i.test(failure.message || "");
 }
 
 async function ask(engine, messages, { timeoutMs, requestStartedAt }) {
@@ -129,6 +138,7 @@ export default async function handler(request) {
   const preferred = ENGINES[clean(body?.modelPreference, 40)] ? clean(body.modelPreference, 40) : "qwen-max";
   const ids = body?.allowFallback === false ? [preferred] : ORDER[preferred];
   const failures = [];
+  const blockedProviders = new Set();
   const requestStartedAt = Date.now();
   const messages = [
     { role: "system", content: `你是校园海龟汤游戏的严谨裁判。只根据真相回答玩家的是非问题，不泄露完整答案。回复必须是 JSON：{"answer":"是|否|关系不大|接近了","reply":"一句自然提示","progress":0}。progress 表示玩家接近真相的程度。真相：${truth}` },
@@ -137,12 +147,14 @@ export default async function handler(request) {
 
   for (const [index, id] of ids.entries()) {
     const engine = ENGINES[id];
+    if (blockedProviders.has(engine.provider)) continue;
     const remainingMs = GAME_REQUEST_BUDGET_MS - (Date.now() - requestStartedAt);
     const targetTimeout = index === 0 ? GAME_PRIMARY_TIMEOUT_MS : GAME_FALLBACK_TIMEOUT_MS;
     const timeoutMs = Math.min(targetTimeout, Math.max(0, remainingMs - 600));
     const outcome = await ask(engine, messages, { timeoutMs, requestStartedAt });
     if (!outcome.ok) {
       failures.push(outcome.failure);
+      if (isProviderWideFailure(outcome.failure)) blockedProviders.add(engine.provider);
       console.error("小游戏 AI 调用失败", outcome.failure);
       continue;
     }

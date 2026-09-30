@@ -95,7 +95,7 @@ test("默认调用千问 3.8 Max，并开启联网搜索和统一提示词", asy
   assert.equal(reply.webSearchEnabled, true);
 });
 
-test("千问失败后按顺序切换到备用引擎并返回提示依据", async () => {
+test("千问账户级失败后直接切换到另一服务商", async () => {
   process.env.ADMIN_PASSWORD = "configured-secret";
   process.env.QWEN_API_KEY = "test-qwen-api-key";
   process.env.DEEPSEEK_API_KEY = "test-deepseek-api-key";
@@ -109,9 +109,9 @@ test("千问失败后按顺序切换到备用引擎并返回提示依据", async
   const result = await handler(request({ message: "继续", password: "configured-secret", modelPreference: "qwen-max", allowFallback: true, visitContext: "刚刚玩过默契二选一" }));
   const data = await result.json();
   assert.equal(result.status, 200);
-  assert.deepEqual(models, ["qwen3.8-max", "qwen3.8-flash", "deepseek-v4-pro"]);
+  assert.deepEqual(models, ["qwen3.8-max", "deepseek-v4-pro"]);
   assert.equal(data.engineName, "DeepSeek Pro");
-  assert.deepEqual(data.fallbacks.map((item) => item.engineName), ["千问 3.8 Max", "千问 3.8 Flash"]);
+  assert.deepEqual(data.fallbacks.map((item) => item.engineName), ["千问 3.8 Max"]);
 });
 
 test("三个新增在线引擎都使用各自模型与同一份系统提示词", async () => {

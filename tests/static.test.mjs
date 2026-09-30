@@ -42,7 +42,7 @@ test("Netlify AI 路由和入口文件存在", () => {
   assert.match(redirects, /^\/api\/game\s+\/\.netlify\/functions\/game\s+200/m);
 });
 
-test("V70 响应式入口与独立页面样式已接入", () => {
+test("V73 响应式入口与独立页面样式已接入", () => {
   const index = readFileSync(join(root, "index.html"), "utf8");
   const responsive = readFileSync(join(root, "css", "responsive.css"), "utf8");
   const responsiveGames = readFileSync(join(root, "css", "responsive-games.css"), "utf8");
@@ -53,8 +53,9 @@ test("V70 响应式入口与独立页面样式已接入", () => {
   assert.match(index, /viewport-fit=cover/);
   assert.match(index, /id="nav-toggle"/);
   assert.match(index, /id="site-nav"/);
-  assert.match(index, /css\/responsive\.css\?v=70/);
-  assert.match(index, /js\/responsive\.js\?v=70/);
+  assert.match(index, /id="arcade-open"/);
+  assert.match(index, /css\/responsive\.css\?v=73/);
+  assert.match(index, /js\/responsive\.js\?v=73/);
   assert.match(responsive, /@media \(max-width: 1024px\)/);
   assert.match(responsive, /min-height: 44px/);
   assert.match(responsiveGames, /@media \(max-width: 650px\)/);
@@ -87,9 +88,10 @@ test("首屏场景与猜心对决使用轻量资源", () => {
   assert.doesNotMatch(mind, /data:image\//);
   assert.match(mind, /assets\/mind-duel-bg\.webp/);
   assert.match(extras, /IntersectionObserver/);
-  assert.match(index, /visit-memory\.js\?v=69/);
-  assert.match(extras, /games-bundle\.js\?v=69/);
-  assert.match(extras, /sidebar-bundle\.js\?v=69/);
+  assert.match(index, /visit-memory\.js\?v=73/);
+  assert.match(extras, /games-bundle\.js\?v=73/);
+  assert.match(extras, /sidebar-bundle\.js\?v=73/);
+  assert.match(extras, /arcade-open/);
   assert.doesNotMatch(experience, /\/api\/transcribe/);
   assert.doesNotMatch(extras, /supplement\.open=true/);
 });

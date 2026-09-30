@@ -37,16 +37,30 @@ const ENGINE_CONFIG = Object.freeze({
 });
 const MAX_MESSAGE_LENGTH = 1200;
 const MAX_HISTORY_ITEMS = 12;
-const MAX_HISTORY_ITEM_LENGTH = 520;
-const MAX_HISTORY_CONTEXT_LENGTH = 4_800;
+const MAX_HISTORY_ITEM_LENGTH = 440;
+const MAX_HISTORY_CONTEXT_LENGTH = 3_800;
 const MAX_IMAGE_DATA_LENGTH = 1_900_000;
 const MAX_TOPIC_CONTEXT_LENGTH = 360;
-const MAX_VISIT_CONTEXT_LENGTH = 900;
-const REQUEST_BUDGET_MS = 52_000;
-const PRIMARY_ENGINE_TIMEOUT_MS = 20_000;
-const SEARCH_PRIMARY_ENGINE_TIMEOUT_MS = 26_000;
-const FALLBACK_ENGINE_TIMEOUT_MS = 10_000;
-const MIN_ATTEMPT_TIMEOUT_MS = 3_500;
+const MAX_VISIT_CONTEXT_LENGTH = 720;
+// The observed production gateway closes buffered requests at about 30 seconds.
+// Keep the whole fallback chain below that boundary so this function can return JSON.
+const REQUEST_BUDGET_MS = 26_000;
+const PRIMARY_ENGINE_TIMEOUT_MS = 15_000;
+const SEARCH_PRIMARY_ENGINE_TIMEOUT_MS = 17_000;
+const FALLBACK_ENGINE_TIMEOUT_MS = 9_000;
+const MIN_ATTEMPT_TIMEOUT_MS = 2_500;
+const PROVIDER_WIDE_FAILURE_CODES = new Set([
+  "ENGINE_NOT_CONFIGURED",
+  "QWEN_BASE_URL_REQUIRED",
+  "ENGINE_ACCOUNT_UNAVAILABLE",
+  "ENGINE_ACCESS_DENIED",
+  "ENGINE_KEY_INVALID",
+  "ENGINE_QUOTA_EXHAUSTED",
+  "ENGINE_RATE_LIMITED",
+  "ENGINE_UNAVAILABLE",
+  "ENGINE_TIMEOUT",
+  "ENGINE_NETWORK_ERROR",
+]);
 const FALLBACK_ORDERS = Object.freeze({
   "qwen-max": ["qwen-max", "qwen-flash", "deepseek-pro", "deepseek-flash"],
   "qwen-flash": ["qwen-flash", "qwen-max", "deepseek-pro", "deepseek-flash"],
@@ -646,8 +660,10 @@ export default async function handler(request) {
 
   const engines = engineSequence(body?.modelPreference, body?.allowFallback);
   const failures = [];
+  const blockedProviders = new Set();
   const requestStartedAt = Date.now();
   for (const [index, engine] of engines.entries()) {
+    if (blockedProviders.has(engine.provider)) continue;
     const searchEnabled = engine.provider === "qwen" && searchRequested;
     const timeoutMs = attemptTimeout({
       index,
@@ -662,7 +678,7 @@ export default async function handler(request) {
         { role: "user", content: userContent },
       ],
       temperature: resolveTemperature(profile, mode),
-      max_tokens: mode === "study" ? 520 : 420,
+      max_tokens: mode === "study" ? 460 : 360,
       stream: false,
     };
     if (searchEnabled) {
@@ -679,6 +695,7 @@ export default async function handler(request) {
     const outcome = await callEngine(engine, requestBody, { timeoutMs, requestStartedAt });
     if (!outcome.ok) {
       failures.push(outcome.failure);
+      if (PROVIDER_WIDE_FAILURE_CODES.has(outcome.failure.code)) blockedProviders.add(engine.provider);
       continue;
     }
 

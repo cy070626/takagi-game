@@ -137,11 +137,13 @@
 
 const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.body.append(script)});
 let gamesPromise=null,sidebarPromise=null,sidebarReady=false;
-const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=69'));
-const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=69').then(()=>{sidebarReady=true}));
+const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=73'));
+const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=73').then(()=>{sidebarReady=true}));
 const gameAnchor=document.querySelector('.interactions');
 if(gameAnchor&&'IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();loadGames()}},{rootMargin:'700px'});observer.observe(gameAnchor)}else setTimeout(loadGames,1200);
 setTimeout(loadGames,6000);
+const arcadeTrigger=document.getElementById('arcade-open');
+if(arcadeTrigger){const warm=()=>loadGames();arcadeTrigger.addEventListener('pointerenter',warm,{once:true});arcadeTrigger.addEventListener('focus',warm,{once:true});arcadeTrigger.addEventListener('click',()=>{arcadeTrigger.disabled=true;loadGames().then(()=>{const shelf=document.querySelector('.arcade-shelf');if(!shelf)return;shelf.open=true;shelf.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});shelf.querySelector('summary')?.focus()}).finally(()=>{arcadeTrigger.disabled=false})})}
 ['omikuji-open','memories-open'].forEach(id=>{const trigger=document.getElementById(id);if(!trigger)return;const warm=()=>loadSidebar();trigger.addEventListener('pointerenter',warm,{once:true});trigger.addEventListener('focus',warm,{once:true});trigger.addEventListener('click',function resume(event){if(sidebarReady)return;event.preventDefault();event.stopImmediatePropagation();loadSidebar().then(()=>trigger.click())},{capture:true})});
 setTimeout(loadSidebar,9000);
 
