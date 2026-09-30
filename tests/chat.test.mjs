@@ -67,7 +67,7 @@ test("正确密码才调用 DeepSeek，并传入短期上下文", async () => {
   ]);
 });
 
-test("默认调用千问 3.8 Max，并开启联网搜索和统一提示词", async () => {
+test("默认调用千问 3.8 Flash，并开启联网搜索和统一提示词", async () => {
   process.env.ADMIN_PASSWORD = "configured-secret";
   process.env.QWEN_API_KEY = "test-qwen-api-key";
   let calledUrl;
@@ -87,11 +87,11 @@ test("默认调用千问 3.8 Max，并开启联网搜索和统一提示词", asy
 
   assert.equal(response.status, 200);
   assert.equal(calledUrl, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
-  assert.equal(outbound.model, "qwen3.8-max");
+  assert.equal(outbound.model, "qwen3.8-flash");
   assert.equal(outbound.enable_search, true);
   assert.match(outbound.messages[0].content, /今天天气如何/);
   assert.match(outbound.messages[0].content, /参考原作中高木/);
-  assert.equal(reply.engineName, "千问 3.8 Max");
+  assert.equal(reply.engineName, "千问 3.8 Flash");
   assert.equal(reply.webSearchEnabled, true);
 });
 
@@ -128,8 +128,8 @@ test("千问账户级失败后直接切换到另一服务商", async () => {
   const result = await handler(request({ message: "继续", password: "configured-secret", modelPreference: "qwen-max", allowFallback: true, visitContext: "刚刚玩过默契二选一" }));
   const data = await result.json();
   assert.equal(result.status, 200);
-  assert.deepEqual(models, ["qwen3.8-max", "deepseek-v4-pro"]);
-  assert.equal(data.engineName, "DeepSeek Pro");
+  assert.deepEqual(models, ["qwen3.8-max", "deepseek-v4-flash"]);
+  assert.equal(data.engineName, "DeepSeek Flash");
   assert.deepEqual(data.fallbacks.map((item) => item.engineName), ["千问 3.8 Max"]);
 });
 
@@ -360,3 +360,4 @@ test("网页词条对象会转成可用的话题素材", async () => {
   assert.match(outbound.messages[0].content, /概要：课间写下没说出口的话/);
   assert.match(outbound.messages[0].content, /不照抄词条/);
 });
+

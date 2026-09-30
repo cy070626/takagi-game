@@ -137,8 +137,8 @@
 
 const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>{script.remove();reject(new Error('功能脚本加载失败，请再次点击重试。'))};document.body.append(script)});
 let gamesPromise=null,sidebarPromise=null,sidebarReady=false;
-const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=75').catch(error=>{gamesPromise=null;throw error}));
-const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=75').then(()=>{sidebarReady=true}).catch(error=>{sidebarPromise=null;throw error}));
+const loadGames=()=>gamesPromise||(gamesPromise=loadScript('./js/games-bundle.js?v=76').catch(error=>{gamesPromise=null;throw error}));
+const loadSidebar=()=>sidebarPromise||(sidebarPromise=loadScript('./js/sidebar-bundle.js?v=76').then(()=>{sidebarReady=true}).catch(error=>{sidebarPromise=null;throw error}));
 const warmGames=()=>loadGames().catch(()=>{});
 const warmSidebar=()=>loadSidebar().catch(()=>{});
 const gameAnchor=document.querySelector('.interactions');

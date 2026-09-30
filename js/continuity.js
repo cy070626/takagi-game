@@ -54,10 +54,14 @@
  const toolbar=textEl('div','','conversation-tools');
  const speed=textEl('button','');speed.type='button';const paintSpeed=()=>speed.textContent=load('takagi-text-speed')==='instant'?'文字：即时':'文字：轻快';paintSpeed();speed.onclick=()=>{save('takagi-text-speed',load('takagi-text-speed')==='instant'?'quick':'instant');paintSpeed()};
  const recap=textEl('button','回看对话');recap.type='button';recap.onclick=()=>{const body=textEl('div','','conversation-history');log.querySelectorAll('.message').forEach(row=>{body.append(textEl('strong',row.classList.contains('assistant')?'高木':'你'),textEl('p',row.querySelector('p')?.textContent||''))});openDialog('这次见面的对话',body)};
- toolbar.append(speed,recap);document.querySelector('.composer').prepend(toolbar);
- const trail=textEl('p','本地情景 · 可以换话题，也可以纠正我的理解','conversation-trail');toolbar.after(trail);
+ const latest=textEl('button','回到最新');latest.type='button';latest.onclick=()=>{log.scrollTo({top:log.scrollHeight,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})};
+ toolbar.append(speed,recap,latest);document.querySelector('.composer').prepend(toolbar);
+ const trail=textEl('p','从今天的小事聊起，也可以接着刚才说。','conversation-trail');toolbar.after(trail);
+ const shortcuts=textEl('div','','scene-shortcuts');
+ [['一起玩一局','arcade-open'],['留一句诗','poetry-open']].forEach(([label,id])=>{const button=textEl('button',label);button.type='button';button.onclick=()=>document.getElementById(id)?.click();shortcuts.append(button)});
+ document.querySelector('.scene-story')?.append(shortcuts);
  const original=window.companionLocalReply;
- window.companionLocalReply=(...args)=>{const reply=original(...args);trail.textContent=current?'正在聊：'+current.title+' · 本次见面保留上下文':'本地情景 · 可以换话题，也可以纠正我的理解';if(['tired','low','anxious'].includes(profile.currentMood)||profile.chatStyle==='quiet')reply.mood='quiet';if(profile.chatStyle==='quiet'){reply.text=reply.text.split(/(?<=[。！？])/).slice(0,2).join('')}return reply};
+ window.companionLocalReply=(...args)=>{const reply=original(...args);trail.textContent=current?'正在聊：'+current.title+' · 可以接着刚才说':'从今天的小事聊起，也可以接着刚才说。';if(['tired','low','anxious'].includes(profile.currentMood)||profile.chatStyle==='quiet')reply.mood='quiet';if(profile.chatStyle==='quiet'){reply.text=reply.text.split(/(?<=[。！？])/).slice(0,2).join('')}return reply};
  document.querySelector('#actions').addEventListener('click',event=>{
   const action=event.target.closest('[data-action]')?.dataset.action;
   const key=({tea:'food',share:'food',guess:'food',umbrella:'rain',rain:'rain',walk:activeScene==='festival'?'festival':'rain',stay:'tired',chocolate:'valentine',gift:'valentine',reason:'valentine',stall:'festival',fireworks:'festival',find:'festival'})[action];

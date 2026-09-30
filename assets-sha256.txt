@@ -1,5 +1,5 @@
 # 素材 SHA-256，共 134 个文件
-# V75 保留压缩素材，新增两张GIF静态封面。
+# V76 沿用已压缩素材与静态 GIF 封面，图片文件未改动。
 
 5885d01ca5866b2ad3bab826de39cba766be23b3e1f33b88985b4ebff2439e27  assets/cafeteria.webp
 4e3085b8a19b674cc6bf613293b14eb143f385feea5fc490a4391e6909aba92a  assets/evening-study.webp
@@ -135,3 +135,4 @@ aa90682e7c4ab4fc55f537173f5780df53421247479cfd4e17245c9fc8bfb4ba  assets/user-ga
 87c2db30364891dc9a0241b0d9d6c13711cd9af77284e4f22b2421aaf8f7e44d  assets/user-gallery-202609/b3-18.webp
 be79b5376c63401e4c7c318cb143da0cf00b6aa858a59a84ae1ba10c37cc9574  assets/user-gallery-202609/b3-19.webp
 37cabb9fdd239e65e26516e94e76c55e302175cdbf90d9e5e8dfa19e3e4dc26c  assets/user-gallery-202609/b3-20.webp
+

@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 
-const DEFAULT_ENGINE = "qwen-max";
+const DEFAULT_ENGINE = "qwen-flash";
 const ENGINE_CONFIG = Object.freeze({
   "qwen-max": {
     id: "qwen-max",
@@ -60,13 +60,10 @@ const PROVIDER_WIDE_FAILURE_CODES = new Set([
   "ENGINE_KEY_INVALID",
   "ENGINE_QUOTA_EXHAUSTED",
   "ENGINE_RATE_LIMITED",
-  "ENGINE_UNAVAILABLE",
-  "ENGINE_TIMEOUT",
-  "ENGINE_NETWORK_ERROR",
 ]);
 const FALLBACK_ORDERS = Object.freeze({
-  "qwen-max": ["qwen-max", "qwen-flash", "deepseek-pro", "deepseek-flash"],
-  "qwen-flash": ["qwen-flash", "qwen-max", "deepseek-pro", "deepseek-flash"],
+  "qwen-max": ["qwen-max", "qwen-flash", "deepseek-flash", "deepseek-pro"],
+  "qwen-flash": ["qwen-flash", "qwen-max", "deepseek-flash", "deepseek-pro"],
   "deepseek-pro": ["deepseek-pro", "deepseek-flash", "qwen-max", "qwen-flash"],
   "deepseek-flash": ["deepseek-flash", "deepseek-pro", "qwen-max", "qwen-flash"],
 });
@@ -408,7 +405,7 @@ function engineSequence(preference, allowFallback) {
   return ids.map((id) => ENGINE_CONFIG[id]);
 }
 
-async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) {
+async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt, retryLimit = MAX_TRANSIENT_RETRIES }) {
   const apiKey = process.env[engine.apiKeyEnv];
   if (!apiKey) {
     return {
@@ -467,7 +464,7 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
   try {
     for (let index = 0; index < endpoints.length; index += 1) {
       usedEndpoint = endpoints[index];
-      for (let retry = 0; retry <= MAX_TRANSIENT_RETRIES; retry += 1) {
+      for (let retry = 0; retry <= retryLimit; retry += 1) {
         requestAttempts += 1;
         try {
           const candidate = await fetch(usedEndpoint, {
@@ -481,9 +478,10 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
           });
           const delay = RETRY_DELAYS_MS[retry] || 0;
           const canRetry = RETRYABLE_UPSTREAM_STATUSES.has(candidate.status)
-            && retry < MAX_TRANSIENT_RETRIES
+            && retry < retryLimit
             && Date.now() + delay + 1_500 < engineDeadline;
           if (canRetry) {
+            await candidate.body?.cancel().catch(() => {});
             await wait(delay);
             continue;
           }
@@ -497,10 +495,10 @@ async function callEngine(engine, requestBody, { timeoutMs, requestStartedAt }) 
           fallbackResponse = candidate;
           break;
         } catch (error) {
-          if (error?.name === "AbortError") throw error;
+          if (controller.signal.aborted || error?.name === "AbortError") throw error;
           lastNetworkError = error;
           const delay = RETRY_DELAYS_MS[retry] || 0;
-          const canRetry = retry < MAX_TRANSIENT_RETRIES && Date.now() + delay + 1_500 < engineDeadline;
+          const canRetry = retry < retryLimit && Date.now() + delay + 1_500 < engineDeadline;
           if (canRetry) {
             await wait(delay);
             continue;
@@ -668,11 +666,12 @@ async function handleChat(request) {
   }
 
   const message = cleanText(body?.message, MAX_MESSAGE_LENGTH);
+  if (typeof body?.image === "string" && body.image.length > MAX_IMAGE_DATA_LENGTH) return json(413, { error: "图片过大，请压缩后重试" });
   const image = cleanText(body?.image, MAX_IMAGE_DATA_LENGTH);
   if (!message && !image) {
     return json(400, { error: "消息不能为空" });
   }
-  if (image && !/^data:image\/(?:jpeg|png|webp);base64,/i.test(image)) {
+  if (image && !/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/i.test(image)) {
     return json(400, { error: "图片格式无效" });
   }
 
@@ -690,14 +689,17 @@ async function handleChat(request) {
       ]
     : message;
 
-  const engines = engineSequence(body?.modelPreference, body?.allowFallback);
+  let engines = engineSequence(body?.modelPreference, body?.allowFallback);
+  if (image && body?.allowFallback === false && engines[0].id === "deepseek-pro") return json(400, {error: "DeepSeek Pro 当前只支持文本，请使用千问或 DeepSeek Flash 识图",code:"VISION_UNSUPPORTED",engine:"deepseek-pro",engineName:"DeepSeek Pro"});
+  if (image) engines = engines.filter(engine => engine.id !== "deepseek-pro").map(engine => engine.id === "deepseek-flash" ? {...engine, model: "deepseek-flash"} : engine);
+  const managed = body?.clientManagedRetries === true && body?.allowFallback === false;
   const failures = [];
   const blockedProviders = new Set();
   const requestStartedAt = Date.now();
   for (const [index, engine] of engines.entries()) {
     if (blockedProviders.has(engine.provider)) continue;
     const searchEnabled = engine.provider === "qwen" && searchRequested;
-    const timeoutMs = attemptTimeout({
+    const timeoutMs = managed ? (image ? 16000 : searchRequested ? 16000 : 14000) : attemptTimeout({
       index,
       searchEnabled,
       remainingMs: REQUEST_BUDGET_MS - (Date.now() - requestStartedAt),
@@ -705,12 +707,12 @@ async function handleChat(request) {
     const requestBody = {
       model: engine.model,
       messages: [
-        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext, visitContext }) },
+        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext, visitContext }) + (image ? "\n图片回应要求：本轮图片是实际视觉输入。先读取画面、文字或题目，再直接回应玩家的问题。辨认不清时指出具体看不清的部分，不能谎称没有收到图片，也不能只说泛泛的陪伴话。不要根据校园场景臆造图片内容。" : "") },
         ...history,
         { role: "user", content: userContent },
       ],
       temperature: resolveTemperature(profile, mode),
-      max_tokens: mode === "study" ? 460 : 360,
+      max_tokens: image ? 900 : mode === "study" ? 460 : 360,
       stream: false,
     };
     if (searchEnabled) {
@@ -718,13 +720,14 @@ async function handleChat(request) {
       requestBody.search_options = { search_strategy: "turbo" };
     }
     if (engine.provider === "qwen") {
+      requestBody.enable_thinking = false;
       requestBody.response_format = { type: "json_object" };
     }
     if (engine.provider === "deepseek") {
       requestBody.thinking = { type: "disabled" };
       requestBody.reasoning_effort = "none";
     }
-    const outcome = await callEngine(engine, requestBody, { timeoutMs, requestStartedAt });
+    const outcome = await callEngine(engine, requestBody, { timeoutMs, requestStartedAt, retryLimit: managed ? 0 : MAX_TRANSIENT_RETRIES });
     if (!outcome.ok) {
       failures.push(outcome.failure);
       if (PROVIDER_WIDE_FAILURE_CODES.has(outcome.failure.code)) blockedProviders.add(engine.provider);
@@ -738,6 +741,8 @@ async function handleChat(request) {
         engine: engine.id,
         engineName: engine.name,
         webSearchEnabled: searchEnabled,
+        visionEnabled: Boolean(image),
+        model: engine.model,
         elapsedMs: outcome.elapsedMs,
         retryCount: Math.max(0, outcome.attempts - 1),
         fallbacks: failures,
@@ -762,6 +767,8 @@ async function handleChat(request) {
       engine: failure.engine,
       engineName: failure.engineName,
       reminder: "当前引擎暂时不可用，请在个性设置中更换其他引擎再试。",
+      retryCount: failure.retryCount || 0,
+      attempts: [failure],
       details: { message: failure.detail || failure.message, status: failure.status, ...(failure.networkCode ? { networkCode: failure.networkCode } : {}) },
     });
   }

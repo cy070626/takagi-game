@@ -818,3 +818,24 @@ summary,
 .game-load-recovery button{min-height:44px;padding:10px 16px;cursor:pointer}
 .arcade-game-modal-bar .arcade-game-modal-close{width:auto;min-width:76px;min-height:44px;padding:0 12px;flex-shrink:0;font-size:16px}
 @media(max-width:700px){.arcade-game-modal-bar small{display:none}.chat:has(.chat-recovery:not([hidden])){height:auto;min-height:1080px}.chat:has(.chat-recovery:not([hidden])) .chat-scroll{min-height:300px}}
+
+/* V76: widen the desktop conversation and reserve more readable history. */
+.chat-cancel{min-height:44px;padding:8px 14px;border:1px solid #cbd6c7;border-radius:18px;background:#fff;color:#496148;cursor:pointer}
+@media(min-width:1025px){
+ .workspace{max-width:1420px;grid-template-columns:minmax(0,.94fr) minmax(0,1.12fr)}
+ .chat{height:980px;min-height:980px}
+ .chat-scroll{min-height:400px;padding:22px}
+ .chat .message{max-width:96%}
+}
+
+/* V77: small shortcuts, legible controls, and less crowded status text. */
+.scene-shortcuts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.scene-shortcuts button{min-height:44px;padding:10px 16px;border:1px solid #cbd8c4;border-radius:18px;background:#fffefa;color:#496047;cursor:pointer}
+.scene-shortcuts button:first-child{background:#496748;border-color:#496748;color:#fff}
+.scene-shortcuts button:focus-visible{outline:2px solid #496748;outline-offset:3px}
+.conversation-tools{flex-wrap:wrap;align-items:center}
+.conversation-tools button{min-height:44px;padding:8px 12px}
+.conversation-trail{line-height:1.65;margin:6px 0 10px}
+.footnote{line-height:1.6;overflow-wrap:anywhere}
+.chat-recovery summary{font-weight:500}
+@media(max-width:480px){.scene-shortcuts button{flex:1}.conversation-tools{gap:6px}.conversation-tools button{font-size:13px}}

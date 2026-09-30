@@ -54,7 +54,7 @@ test("V75 响应式入口与独立页面样式已接入", () => {
   assert.match(index, /id="nav-toggle"/);
   assert.match(index, /id="site-nav"/);
   assert.match(index, /id="arcade-open"/);
-  assert.match(index, /css\/responsive\.css\?v=75/);
+  assert.match(index, /css\/responsive\.css\?v=77/);
   assert.match(index, /js\/responsive\.js\?v=75/);
   assert.match(responsive, /@media \(max-width: 1024px\)/);
   assert.match(responsive, /min-height: 44px/);
@@ -89,8 +89,8 @@ test("首屏场景与猜心对决使用轻量资源", () => {
   assert.match(mind, /assets\/mind-duel-v42-bg\.webp/);
   assert.match(extras, /IntersectionObserver/);
   assert.match(index, /visit-memory\.js\?v=75/);
-  assert.match(extras, /games-bundle\.js\?v=75/);
-  assert.match(extras, /sidebar-bundle\.js\?v=75/);
+  assert.match(extras, /games-bundle\.js\?v=76/);
+  assert.match(extras, /sidebar-bundle\.js\?v=76/);
   assert.match(extras, /arcade-open/);
   assert.doesNotMatch(experience, /\/api\/transcribe/);
   assert.doesNotMatch(extras, /supplement\.open=true/);
@@ -104,3 +104,5 @@ test("合并脚本由构建脚本生成且可以直接部署", () => {
   assert.match(sidebar, /js\/omikuji\.js/);
   assert.match(sidebar, /js\/memories\.js/);
 });
+
+

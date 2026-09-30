@@ -180,7 +180,6 @@
 
   $('#collapse-player').onclick = () => { $('#player-panel').hidden = true; $('#player-peek').hidden = false; };
   $('#player-peek').onclick = () => { $('#player-panel').hidden = false; $('#player-peek').hidden = true; };
-  $('#effects-toggle').onclick = event => { const enabled = theater.dataset.effects !== 'false'; theater.dataset.effects = String(!enabled); event.currentTarget.textContent = `光影：${enabled ? '关' : '开'}`; event.currentTarget.setAttribute('aria-pressed', String(!enabled)); localStorage.setItem('takagi-music-effects', String(!enabled)); };
   $('#fit-toggle').onclick = event => { const complete = theater.dataset.fit === 'complete'; theater.dataset.fit = complete ? 'immersive' : 'complete'; event.currentTarget.textContent = `画面：${complete ? '沉浸' : '完整'}`; localStorage.setItem('takagi-music-fit', theater.dataset.fit); };
   $('#minimize').onclick = () => notify('minimize');
   function openSupplement() {
@@ -208,10 +207,7 @@
     $('#track-title').textContent = file.name; $('#track-artist').textContent = '本地音乐'; $('#peek-title').textContent = file.name; $('#player-note').textContent = '本地文件只在当前页面播放，不会上传。';
   };
 
-  theater.dataset.effects = localStorage.getItem('takagi-music-effects') || 'true';
   theater.dataset.fit = localStorage.getItem('takagi-music-fit') || 'complete';
-  $('#effects-toggle').textContent = `光影：${theater.dataset.effects === 'false' ? '关' : '开'}`;
-  $('#effects-toggle').setAttribute('aria-pressed', String(theater.dataset.effects !== 'false'));
   $('#fit-toggle').textContent = `画面：${theater.dataset.fit === 'complete' ? '完整' : '沉浸'}`;
   makeRail(); setupSupplement(); renderScene(true); notify('ready');
   window.addEventListener('pagehide', () => { if (localUrl) URL.revokeObjectURL(localUrl); });
