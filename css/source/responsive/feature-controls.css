@@ -1,0 +1,240 @@
+/* V75 recovery controls and game loading state. */
+.chat-recovery {
+  padding: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+.chat-recovery[hidden],
+.game-load-status[hidden],
+.game-load-recovery[hidden] {
+  display: none;
+}
+.chat-recovery button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #cbd6c7;
+  border-radius: 18px;
+  background: #fff;
+  color: #496148;
+}
+.chat-recovery details {
+  flex-basis: 100%;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.chat-recovery summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.game-frame-viewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.game-load-status,
+.game-load-recovery {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 24px;
+  background: #f8faf4;
+  color: #496148;
+}
+.game-load-recovery button {
+  min-height: 44px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.arcade-game-modal-bar .arcade-game-modal-close {
+  width: auto;
+  min-width: 76px;
+  min-height: 44px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+@media (max-width: 700px) {
+  .arcade-game-modal-bar small {
+    display: none;
+  }
+  .chat:has(.chat-recovery:not([hidden])) {
+    height: auto;
+    min-height: 1080px;
+  }
+  .chat:has(.chat-recovery:not([hidden])) .chat-scroll {
+    min-height: 300px;
+  }
+}
+/* V76: widen the desktop conversation and reserve more readable history. */
+.chat-cancel {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #cbd6c7;
+  border-radius: 18px;
+  background: #fff;
+  color: #496148;
+  cursor: pointer;
+}
+@media (min-width: 1025px) {
+  .workspace {
+    max-width: 1420px;
+    grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.12fr);
+  }
+  .chat {
+    height: 980px;
+    min-height: 980px;
+  }
+  .chat-scroll {
+    min-height: 400px;
+    padding: 22px;
+  }
+  .chat .message {
+    max-width: 96%;
+  }
+}
+/* V77: small shortcuts, legible controls, and less crowded status text. */
+.scene-shortcuts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.scene-shortcuts button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #cbd8c4;
+  border-radius: 18px;
+  background: #fffefa;
+  color: #496047;
+  cursor: pointer;
+}
+.scene-shortcuts button:first-child {
+  background: #496748;
+  border-color: #496748;
+  color: #fff;
+}
+.scene-shortcuts button:focus-visible {
+  outline: 2px solid #496748;
+  outline-offset: 3px;
+}
+.conversation-tools {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.conversation-tools button {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+.conversation-trail {
+  line-height: 1.65;
+  margin: 6px 0 10px;
+}
+.footnote {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.chat-recovery summary {
+  font-weight: 500;
+}
+@media (max-width: 480px) {
+  .scene-shortcuts button {
+    flex: 1;
+  }
+  .conversation-tools {
+    gap: 6px;
+  }
+  .conversation-tools button {
+    font-size: 13px;
+  }
+}
+/* V78: topic directions shown as small reading hints. */
+.term-branch-chip {
+  padding: 7px 12px;
+  border: 1px solid #d7e1d0;
+  border-radius: 18px;
+  background: #f7f9f3;
+  color: #526b4e;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+/* V80: optional local illustrations inside the existing chat. */
+.chat-scene-image {
+  margin-top: 12px;
+  border: 1px solid #d7e1d0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8faf5;
+}
+.chat-scene-image summary {
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px;
+  cursor: pointer;
+  line-height: 1.5;
+  color: #496148;
+}
+.chat-scene-image figure {
+  margin: 0;
+  padding: 0 12px 12px;
+}
+.chat-scene-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.chat-scene-image figcaption {
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 8px;
+  color: #697b61;
+}
+.chat-feature-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 12px;
+  margin-top: 10px;
+  border: 1px solid #cbd8c4;
+  border-radius: 16px;
+  color: #496148;
+}
+/* Keep the transcript readable without adding controls or changing content order. */
+@media (max-width: 700px) {
+  .chat-scroll {
+    min-height: clamp(270px, 42svh, 360px);
+  }
+  .chat-head h2 {
+    font-size: clamp(15px, 4.1vw, 18px);
+  }
+  .ai-password-bar label {
+    white-space: nowrap;
+  }
+  .suggestions {
+    row-gap: 8px;
+  }
+  .message p {
+    overflow-wrap: anywhere;
+  }
+}
+@media (min-width: 701px) and (max-width: 1024px) {
+  .chat-scroll {
+    min-height: 340px;
+  }
+  .chat-head h2 {
+    font-size: clamp(17px, 2.2vw, 22px);
+  }
+}

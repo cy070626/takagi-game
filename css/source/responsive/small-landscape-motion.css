@@ -1,0 +1,57 @@
+@media (max-width: 380px) {
+  :root {
+    --mobile-gutter: 10px;
+  }
+  .site-header .brand {
+    gap: 8px;
+    font-size: 19px;
+  }
+  .site-header .brand small {
+    font-size: 10px;
+  }
+  .site-header nav,
+  .site-header nav#site-nav {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .scene {
+    height: 400px;
+  }
+  .speech {
+    max-width: 58vw;
+    font-size: 14px;
+  }
+  .chat-head .avatar {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+  }
+  .mode-switch small,
+  .profile-summary small,
+  .quick-guide small {
+    line-height: 1.35;
+  }
+  .actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (orientation: landscape) and (max-height: 540px) and (max-width: 1024px) {
+  .site-header {
+    position: relative;
+    min-height: 62px;
+  }
+  .chat {
+    height: calc(var(--app-viewport-height) - 16px);
+    min-height: 360px;
+  }
+  .scene {
+    height: min(82dvh, 500px);
+  }
+  .scene-picker {
+    grid-auto-columns: minmax(128px, 24vw);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-toggle span {
+    transition: none;
+  }
+}

@@ -1,0 +1,519 @@
+/* V58 youth poetry notebook. */
+body:has(.poetry-modal[open]) {
+  overflow: hidden;
+}
+.poetry-modal {
+  width: min(1080px, 94vw);
+  height: min(790px, 92dvh);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: #f9f4e9;
+  color: #3e493d;
+  overflow: hidden;
+  box-shadow: 0 32px 110px #1d2d24a8;
+}
+.poetry-modal::backdrop {
+  background: #17261fc2;
+  backdrop-filter: blur(7px);
+}
+.poetry-shell {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background:
+    radial-gradient(circle at 8% 10%, #fffdf6, transparent 34%),
+    linear-gradient(145deg, #fbf7ee, #f2eadc);
+}
+.poetry-header {
+  height: auto;
+  min-height: 78px;
+  margin: 0;
+  padding: 17px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ded6c6;
+  background: #fffcf5;
+}
+.poetry-heading {
+  display: grid;
+  gap: 4px;
+}
+.poetry-heading h2 {
+  margin: 0;
+  font:
+    500 25px/1.2 Georgia,
+    "Noto Serif SC",
+    serif;
+  letter-spacing: 0.08em;
+  color: #394c3d;
+}
+.poetry-heading p {
+  margin: 0;
+  color: #7a806f;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.poetry-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #c7c9b9;
+  border-radius: 50%;
+  background: #fffefa;
+  color: #53624e;
+  font: 300 27px/1 sans-serif;
+}
+.poetry-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(290px, 0.82fr) minmax(420px, 1.18fr);
+}
+.poetry-gallery,
+.poetry-editor {
+  min-height: 0;
+  padding: 26px;
+  overflow: auto;
+}
+.poetry-gallery {
+  position: relative;
+  border-right: 1px solid #ddd5c5;
+  background: linear-gradient(160deg, #30483d, #243a33);
+  color: #f7f0df;
+}
+.poetry-gallery:before {
+  content: "青\A春";
+  white-space: pre;
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  color: #ffffff0d;
+  font:
+    700 92px/0.82 Georgia,
+    "Noto Serif SC",
+    serif;
+  pointer-events: none;
+}
+.poetry-kicker {
+  display: block;
+  color: #bfcab8;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.poetry-gallery blockquote {
+  position: relative;
+  margin: 20px 0;
+  padding: 18px 20px;
+  border-left: 2px solid #dfc99f;
+  background: #ffffff0c;
+  border-radius: 0 13px 13px 0;
+}
+.poetry-gallery blockquote p {
+  margin: 0;
+  color: #fff8e9;
+  font:
+    500 20px/1.9 Georgia,
+    "Noto Serif SC",
+    serif;
+  letter-spacing: 0.08em;
+}
+.poetry-gallery blockquote cite {
+  display: block;
+  margin-top: 12px;
+  color: #cbd4c7;
+  font: 400 11px/1.5 sans-serif;
+  letter-spacing: 0.08em;
+}
+.poetry-featured {
+  box-shadow: inset 0 0 0 1px #ffffff0f;
+}
+.poetry-changing p {
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+}
+.poetry-next {
+  position: relative;
+  border: 1px solid #ffffff45;
+  border-radius: 999px;
+  background: #ffffff0b;
+  color: #f4ebd9;
+  padding: 9px 15px;
+  font-size: 12px;
+}
+.poetry-gallery-note {
+  position: relative;
+  margin-top: 24px;
+  color: #d0d7cc !important;
+  font-size: 12px !important;
+  line-height: 1.85 !important;
+}
+.poetry-editor {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  background: #fffcf5;
+}
+.poetry-editor-top {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.poetry-editor-top .poetry-kicker {
+  color: #88917e;
+}
+.poetry-editor h3 {
+  margin: 4px 0 0;
+  font:
+    500 20px/1.35 Georgia,
+    "Noto Serif SC",
+    serif;
+}
+.poetry-new {
+  border: 1px solid #c7d1c2;
+  border-radius: 999px;
+  background: #f4f7ef;
+  color: #526650;
+  padding: 9px 13px;
+  font-size: 12px;
+}
+.poetry-editor > label {
+  display: grid;
+  gap: 6px;
+  color: #53604e;
+  font-size: 12px;
+  font-weight: 600;
+}
+.poetry-editor input,
+.poetry-editor select,
+.poetry-editor textarea {
+  width: 100%;
+  border: 1px solid #d5d4c7;
+  border-radius: 10px;
+  background: #fffefa;
+  color: #3f4d3e;
+  padding: 10px 12px;
+  font:
+    400 14px/1.6 "Microsoft YaHei",
+    "PingFang SC",
+    sans-serif;
+}
+.poetry-editor textarea {
+  min-height: 150px;
+  resize: vertical;
+  font-family: Georgia, "Noto Serif SC", "Songti SC", serif;
+  font-size: 16px;
+  line-height: 1.9;
+}
+.poetry-counter {
+  justify-self: end;
+  margin-top: -8px;
+  color: #889181;
+  font-size: 10px;
+}
+.poetry-status {
+  min-height: 36px;
+  margin: 0 !important;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: #f1f3eb;
+  color: #687662 !important;
+  font-size: 11px !important;
+  line-height: 1.55 !important;
+}
+.poetry-status[data-state="success"] {
+  background: #edf5e9;
+  color: #426543 !important;
+}
+.poetry-status[data-state="error"] {
+  background: #fff0e9;
+  color: #8c4e40 !important;
+}
+.poetry-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.poetry-actions button {
+  border-radius: 9px;
+  padding: 10px 13px;
+  font-size: 12px;
+}
+.poetry-save {
+  border: 1px solid #496748;
+  background: #496748;
+  color: #fff;
+}
+.poetry-improve {
+  border: 1px solid #71806b;
+  background: #f2f5ec;
+  color: #40553f;
+}
+.poetry-delete {
+  margin-left: auto;
+  border: 1px solid #dec9bd;
+  background: #fff8f3;
+  color: #855b4b;
+}
+.poetry-saved-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+.poetry-saved-heading h3 {
+  font-size: 15px;
+}
+.poetry-saved-heading small {
+  color: #8b9184;
+  font-size: 10px;
+}
+.poetry-saved-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.poetry-saved-item {
+  min-width: 0;
+  border: 1px solid #deddd1;
+  border-radius: 11px;
+  background: #fffefa;
+  padding: 10px;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+}
+.poetry-saved-item[data-active="true"] {
+  border-color: #5f765d;
+  box-shadow: inset 0 0 0 1px #5f765d;
+}
+.poetry-saved-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 13px/1.4 serif;
+}
+.poetry-saved-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #727b6d;
+  font-size: 11px;
+}
+.poetry-saved-item small {
+  color: #9a9e94;
+  font-size: 9px;
+}
+.poetry-empty {
+  grid-column: 1/-1;
+  margin: 0 !important;
+  padding: 14px;
+  border: 1px dashed #d8d6c9;
+  border-radius: 10px;
+  color: #858b7f !important;
+  font-size: 12px !important;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  header nav #poetry-open {
+    display: inline-block;
+  }
+  .poetry-modal {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .poetry-header {
+    min-height: 68px;
+    padding: 12px 14px;
+  }
+  .poetry-heading h2 {
+    font-size: 21px;
+  }
+  .poetry-heading p {
+    font-size: 10px;
+  }
+  .poetry-body {
+    display: block;
+    overflow: auto;
+  }
+  .poetry-gallery,
+  .poetry-editor {
+    overflow: visible;
+    padding: 19px;
+  }
+  .poetry-gallery {
+    min-height: 390px;
+    border-right: 0;
+    border-bottom: 1px solid #ddd5c5;
+  }
+  .poetry-gallery blockquote p {
+    font-size: 18px;
+  }
+  .poetry-editor textarea {
+    min-height: 170px;
+  }
+  .poetry-saved-list {
+    grid-template-columns: 1fr;
+  }
+  .poetry-delete {
+    margin-left: 0;
+  }
+}
+/* V60 curated Chinese and Japanese poetry library. */
+.poetry-library-heading {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.poetry-library-heading h3 {
+  margin: 5px 0 0;
+  color: #fff6e7;
+  font:
+    500 18px/1.45 Georgia,
+    "Noto Serif SC",
+    serif;
+}
+.poetry-library-heading small {
+  color: #bac8ba;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.poetry-library-filters {
+  position: relative;
+  display: flex;
+  gap: 7px;
+  margin: 15px 0 12px;
+}
+.poetry-library-filters button {
+  border: 1px solid #ffffff32;
+  border-radius: 999px;
+  background: #ffffff09;
+  color: #dbe4d8;
+  padding: 7px 11px;
+  font-size: 10px;
+}
+.poetry-library-filters button[data-active="true"] {
+  border-color: #e1cfa9;
+  background: #e1cfa91d;
+  color: #fff7e8;
+}
+.poetry-library-detail {
+  position: relative;
+  margin-bottom: 13px;
+  padding: 16px;
+  border: 1px solid #ffffff1d;
+  border-radius: 14px;
+  background: #ffffff0a;
+}
+.poetry-library-meta {
+  display: flex;
+  gap: 6px;
+}
+.poetry-library-meta span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ffffff10;
+  color: #cad7ca;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+.poetry-library-original {
+  white-space: pre-line;
+  margin: 12px 0 7px !important;
+  color: #fff9eb !important;
+  font:
+    500 17px/1.8 Georgia,
+    "Noto Serif SC",
+    "Yu Mincho",
+    serif !important;
+  letter-spacing: 0.055em;
+}
+.poetry-library-translation {
+  margin: 0 0 8px !important;
+  color: #d9e2d8 !important;
+  font-size: 11px !important;
+  line-height: 1.7 !important;
+}
+.poetry-library-detail cite {
+  display: block;
+  color: #d9c8a4;
+  font: 400 10px/1.5 sans-serif;
+  letter-spacing: 0.06em;
+}
+.poetry-library-meaning {
+  margin: 10px 0 0 !important;
+  padding-top: 10px;
+  border-top: 1px solid #ffffff12;
+  color: #cbd6cb !important;
+  font-size: 11px !important;
+  line-height: 1.75 !important;
+}
+.poetry-library-list {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+  padding-right: 3px;
+}
+.poetry-library-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  gap: 1px 8px;
+  padding: 8px 10px;
+  border: 1px solid #ffffff18;
+  border-radius: 9px;
+  background: #ffffff08;
+  color: #edf3e8;
+  text-align: left;
+}
+.poetry-library-item > span {
+  grid-row: 1/3;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffffff10;
+  color: #dbcba9;
+  font: 600 10px/1 serif;
+}
+.poetry-library-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font:
+    500 11px/1.4 Georgia,
+    "Noto Serif SC",
+    serif;
+}
+.poetry-library-item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #aebcaf;
+  font-size: 8px;
+}
+.poetry-library-item[data-active="true"] {
+  border-color: #dbc99e8a;
+  background: #dbc99e16;
+}
+@media (max-width: 760px) {
+  .poetry-library-list {
+    max-height: 260px;
+  }
+  .poetry-library-heading h3 {
+    font-size: 16px;
+  }
+  .poetry-library-original {
+    font-size: 16px !important;
+  }
+}

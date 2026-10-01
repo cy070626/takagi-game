@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const release = JSON.parse(readFileSync(new URL("../build.config.json", import.meta.url), "utf8")).release;
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function filesUnder(dir) {
@@ -21,7 +22,7 @@ test("HTML、CSS 与 JavaScript 中的相对资源路径均存在", () => {
     const references = [...text.matchAll(/["'`](\.\.?\/[^"'`?#]+)(?:[?#][^"'`]*)?["'`]/g)].map((match) => match[1]);
     for (const reference of references) {
       if (reference.includes("${") || reference.startsWith("../.netlify")) continue;
-      const browserBase = source.endsWith("music-theater.js")
+      const browserBase = /music-theater(?:-runtime)?\.js$/.test(source)
         ? join(root, "pages")
         : source.endsWith(".js")
           ? root
@@ -54,14 +55,14 @@ test("V75 响应式入口与独立页面样式已接入", () => {
   assert.match(index, /id="nav-toggle"/);
   assert.match(index, /id="site-nav"/);
   assert.match(index, /id="arcade-open"/);
-  assert.match(index, /css\/responsive\.css\?v=77/);
-  assert.match(index, /js\/responsive\.js\?v=75/);
-  assert.match(responsive, /@media \(max-width: 1024px\)/);
-  assert.match(responsive, /min-height: 44px/);
+  assert.match(index, new RegExp("css\\/responsive\\.css\\?v=" + release));
+  assert.match(index, new RegExp("js\\/responsive\\.js\\?v=" + release));
+  assert.match(responsive, /@media\s*\(max-width:\s*1024px\)/);
+  assert.match(responsive, /min-height:\s*44px/);
   assert.match(responsiveGames, /@media \(max-width: 650px\)/);
-  assert.match(eraser, /responsive-games\.css\?v=70/);
-  assert.match(mind, /responsive-games\.css\?v=74/);
-  assert.match(theater, /responsive-games\.css\?v=70/);
+  assert.match(eraser, new RegExp("responsive-games\\.css\\?v=" + release));
+  assert.match(mind, new RegExp("responsive-games\\.css\\?v=" + release));
+  assert.match(theater, new RegExp("responsive-games\\.css\\?v=" + release));
 });
 
 test("橡皮对决使用低重绘动画路径", () => {
@@ -88,9 +89,9 @@ test("首屏场景与猜心对决使用轻量资源", () => {
   assert.doesNotMatch(mind, /data:image\//);
   assert.match(mind, /assets\/mind-duel-v42-bg\.webp/);
   assert.match(extras, /IntersectionObserver/);
-  assert.match(index, /visit-memory\.js\?v=75/);
-  assert.match(extras, /games-bundle\.js\?v=76/);
-  assert.match(extras, /sidebar-bundle\.js\?v=76/);
+  assert.match(index, new RegExp("visit-memory\\.js\\?v=" + release));
+  assert.match(extras, new RegExp("games-bundle\\.js\\?v=" + release));
+  assert.match(extras, new RegExp("sidebar-bundle\\.js\\?v=" + release));
   assert.match(extras, /arcade-open/);
   assert.doesNotMatch(experience, /\/api\/transcribe/);
   assert.doesNotMatch(extras, /supplement\.open=true/);
@@ -104,5 +105,6 @@ test("合并脚本由构建脚本生成且可以直接部署", () => {
   assert.match(sidebar, /js\/omikuji\.js/);
   assert.match(sidebar, /js\/memories\.js/);
 });
+
 
 

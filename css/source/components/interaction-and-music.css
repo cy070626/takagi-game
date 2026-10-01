@@ -1,0 +1,305 @@
+/* V52 interaction and loading polish */
+input:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #446c52;
+  outline-offset: 4px;
+}
+.scene,
+.chat,
+.interactions,
+.arcade-shelf,
+.leisure,
+.omikuji-shell,
+.memory-shell {
+  scroll-margin-top: 18px;
+}
+@media (pointer: coarse) {
+  button,
+  select,
+  summary {
+    min-height: 42px;
+  }
+  .suggestions button,
+  .term-filters button {
+    min-height: 40px;
+  }
+}
+/* Standalone submitted games */
+.standalone-game-card {
+  min-height: 250px;
+  border: 1px solid #dbe4d5;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 80% 15%, #e7efdc, transparent 34%),
+    linear-gradient(145deg, #fffefa, #f2f6ee);
+  padding: 30px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 10px;
+  overflow: hidden;
+}
+.standalone-game-mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
+  display: grid;
+  place-items: center;
+  background: #496748;
+  color: #fff;
+  font: 600 20px/1 serif;
+  box-shadow: 0 10px 25px #38523c2b;
+}
+.standalone-game-card h4 {
+  margin: 3px 0 0;
+  font: 500 24px/1.3 serif;
+}
+.standalone-game-card p {
+  max-width: 650px;
+  margin: 0;
+  color: #65745e;
+  line-height: 1.75;
+}
+.standalone-game-hint {
+  color: #6d7e64;
+  font-size: 13px;
+}
+.arcade-stage .standalone-game-card .standalone-game-launch {
+  margin-top: 5px;
+  border: 1px solid #3f5d43 !important;
+  border-radius: 999px;
+  background: #496748 !important;
+  color: #fff !important;
+  padding: 12px 22px;
+  font-weight: 700;
+  opacity: 1 !important;
+  box-shadow: 0 8px 20px #36503a35;
+}
+.arcade-stage .standalone-game-card .standalone-game-launch:hover {
+  background: #3f5d43 !important;
+  filter: none;
+}
+body.arcade-game-open {
+  overflow: hidden;
+}
+.arcade-game-modal {
+  width: min(1240px, 96vw);
+  height: min(900px, 94dvh);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: #1d2b22;
+  overflow: hidden;
+  box-shadow: 0 30px 110px #17231bc0;
+}
+.arcade-game-modal::backdrop {
+  background: #15221cce;
+  backdrop-filter: blur(7px);
+}
+.arcade-game-modal-shell {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr);
+}
+.arcade-game-modal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 11px 8px 18px;
+  background: #f8faf4;
+  border-bottom: 1px solid #d9e1d5;
+}
+.arcade-game-modal-bar > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.arcade-game-modal-bar strong {
+  font-family: serif;
+  font-size: 18px;
+}
+.arcade-game-modal-bar small {
+  color: #73806c;
+}
+.arcade-game-modal-close {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #cbd6c7;
+  border-radius: 50%;
+  background: #fff;
+  color: #496148;
+  font-size: 25px;
+  line-height: 1;
+}
+.arcade-game-modal iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #d7bea8;
+}
+@media (max-width: 700px) {
+  .standalone-game-card {
+    min-height: 220px;
+    padding: 22px;
+  }
+  .arcade-game-modal {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .arcade-game-modal-shell {
+    grid-template-rows: 54px minmax(0, 1fr);
+  }
+  .arcade-game-modal-bar {
+    padding-left: 13px;
+  }
+  .arcade-game-modal-bar small {
+    display: none;
+  }
+}
+/* Music theater entry and full-screen stage */
+.music-theater-entry {
+  position: relative;
+  min-height: 250px;
+  padding: 22px;
+  border: 1px solid #d5dfcf;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 88% 12%, #dce8d5, transparent 32%),
+    linear-gradient(145deg, #fffefa, #f1f6ed);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.92fr);
+  gap: 18px;
+  align-items: center;
+  overflow: hidden;
+}
+.music-entry-kicker {
+  margin: 0 !important;
+  font: 700 10px/1 sans-serif !important;
+  letter-spacing: 0.2em;
+  color: #7b8b72 !important;
+}
+.music-theater-entry h2 {
+  margin: 8px 0 5px;
+  font-size: 26px;
+}
+.music-theater-entry .music-entry-copy p {
+  margin: 0;
+  color: #66785b;
+}
+.music-entry-scene {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid #d8e1d2;
+  border-radius: 15px;
+  background: #fffdf8;
+  box-shadow: 0 12px 30px #49674812;
+}
+.music-entry-scene img {
+  width: 112px;
+  aspect-ratio: 1.57;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.music-entry-scene div {
+  min-width: 0;
+}
+.music-entry-scene span,
+.music-entry-scene strong,
+.music-entry-scene small {
+  display: block;
+}
+.music-entry-scene span {
+  font-size: 11px;
+  color: #899480;
+}
+.music-entry-scene strong {
+  margin: 5px 0 2px;
+  color: #3c5741;
+  font: 600 17px/1.3 serif;
+}
+.music-entry-scene small {
+  margin: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #708069 !important;
+}
+.music-entry-actions {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.leisure .music-entry-open {
+  border-color: #496748;
+  background: #496748;
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 19px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px #36503a2b;
+}
+.music-entry-hint {
+  margin: 0 !important;
+  flex: 1 1 230px;
+  color: #708069 !important;
+}
+body.music-theater-open {
+  overflow: hidden;
+}
+.music-theater-modal {
+  width: min(1500px, 98vw);
+  height: min(960px, 97dvh);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: #17221d;
+  overflow: hidden;
+  box-shadow: 0 34px 120px #101b16d9;
+}
+.music-theater-modal::backdrop {
+  background: #111b17df;
+  backdrop-filter: blur(8px);
+}
+.music-theater-modal iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #17221d;
+}
+@media (max-width: 700px) {
+  .music-theater-entry {
+    min-height: 0;
+    padding: 17px;
+    grid-template-columns: 1fr;
+  }
+  .music-entry-scene {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  .music-entry-scene img {
+    width: 96px;
+  }
+  .music-entry-actions {
+    grid-column: auto;
+  }
+  .music-theater-modal {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+  }
+}

@@ -1,0 +1,55 @@
+/* DeepSeek 访问密码 */
+.ai-password-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 7px;
+  padding: 9px 10px;
+  border: 1px solid rgba(73, 103, 72, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.ai-password-bar label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #466044;
+  white-space: nowrap;
+}
+.ai-password-bar input {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(73, 103, 72, 0.28);
+  background: transparent;
+  padding: 7px 3px;
+  color: #293b2d;
+  outline: none;
+}
+.ai-password-bar input:focus {
+  border-bottom-color: #496748;
+  box-shadow: 0 1px 0 #496748;
+}
+.ai-password-bar button {
+  border: 0;
+  background: transparent;
+  color: #6b7e68;
+  cursor: pointer;
+  padding: 5px 6px;
+}
+.password-status {
+  margin: 0 4px 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #7b8877;
+}
+@media (max-width: 520px) {
+  .ai-password-bar {
+    grid-template-columns: 1fr auto;
+  }
+  .ai-password-bar label {
+    grid-column: 1/-1;
+  }
+  .ai-password-bar input {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,88 @@
+:root {
+  --app-viewport-height: 100dvh;
+  --site-header-height: 76px;
+  --mobile-gutter: clamp(12px, 3.6vw, 24px);
+  --tap-size: 44px;
+}
+html {
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+main,
+section,
+article,
+aside,
+header,
+footer,
+div {
+  min-width: 0;
+}
+img,
+video,
+canvas,
+svg,
+iframe {
+  max-width: 100%;
+}
+video,
+audio {
+  width: 100%;
+}
+button,
+a,
+select,
+input,
+textarea,
+summary,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(73, 103, 72, 0.16);
+}
+.nav-toggle {
+  display: none;
+}
+@media (pointer: coarse) {
+  button,
+  a,
+  select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  summary,
+  [role="button"] {
+    min-height: var(--tap-size);
+  }
+  button:hover:not(:disabled),
+  a:hover {
+    filter: none;
+  }
+}
+@media (min-width: 701px) and (max-width: 1024px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(820px, 100%);
+    padding-inline: clamp(20px, 4vw, 42px);
+  }
+  .scene {
+    height: clamp(520px, 72vw, 680px);
+  }
+  .chat {
+    height: min(760px, calc(var(--app-viewport-height) - 40px));
+    min-height: 620px;
+  }
+  .interactions,
+  .terms-preview,
+  .arcade-shelf,
+  .leisure,
+  .omikuji-shell,
+  .memory-shell,
+  footer {
+    width: auto;
+    margin-inline: clamp(20px, 4vw, 42px);
+  }
+}

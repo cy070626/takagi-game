@@ -117,6 +117,7 @@
   let theaterModal=null,theaterFrame=null;
   function closeTheater(stop=false){
     if(!theaterModal)return;
+    theaterFrame?.contentWindow?.postMessage({type:'takagi-music-visibility',visible:false},location.origin);
     if(theaterModal.open)theaterModal.close();
     document.body.classList.remove('music-theater-open');
     if(stop){theaterFrame.src='about:blank';theaterModal.remove();theaterModal=null;theaterFrame=null;openTheater.textContent='♫ 进入音乐小剧场'}
@@ -125,13 +126,14 @@
   function showTheater(){
     if(!theaterModal){
       theaterModal=document.createElement('dialog');theaterModal.className='music-theater-modal';theaterModal.setAttribute('aria-label','音乐小剧场');
-      theaterFrame=document.createElement('iframe');theaterFrame.src='./pages/music-theater.html?v=2';theaterFrame.title='高木同学音乐小剧场';theaterFrame.loading='eager';theaterFrame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';theaterFrame.setAttribute('allowfullscreen','');
+      theaterFrame=document.createElement('iframe');theaterFrame.src='./pages/music-theater.html?v=92';theaterFrame.title='高木同学音乐小剧场';theaterFrame.loading='eager';theaterFrame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';theaterFrame.setAttribute('allowfullscreen','');
       theaterModal.append(theaterFrame);document.body.append(theaterModal);
       theaterModal.addEventListener('cancel',event=>{event.preventDefault();closeTheater(false)});
     }
     document.body.classList.add('music-theater-open');theaterModal.showModal();
   }
   openTheater.onclick=showTheater;
+  globalThis.TakagiMusicTheater=Object.freeze({open:showTheater});
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==theaterFrame?.contentWindow||event.data?.type!=='takagi-music-theater')return;
     const data=event.data;

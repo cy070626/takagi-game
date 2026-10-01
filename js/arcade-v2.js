@@ -26,8 +26,8 @@
     chain: { name: '中日词语接龙', icon: 'し', mode: '本地', time: '3–6 分钟', brief: '选择中文或日语假名，与高木轮流接词。' },
     memory: { name: '记忆翻牌', icon: '▦', mode: '本地', time: '2–5 分钟', brief: '记住校园与季节图案的位置并完成配对。' },
     lateral: { name: '一句话推理', icon: '…', mode: '本地 / 多引擎 AI', time: '5–10 分钟', brief: '通过是非问题还原反常情境的真相。' },
-    mind: { name: '猜心对决', icon: '心', mode: '独立玩法', time: '5–10 分钟', brief: '观察选项与反应，在误导中猜中高木的想法。', external: './games/mind-duel.html?v=74' },
-    eraser: { name: '橡皮对决', icon: '橡', mode: '独立玩法', time: '3–8 分钟', brief: '控制力度和方向，把橡皮弹向得分区域。', external: './games/eraser-duel.html?v=61' }
+    mind: { name: '猜心对决', icon: '心', mode: '独立玩法', time: '5–10 分钟', brief: '观察选项与反应，在误导中猜中高木的想法。', external: './games/mind-duel.html?v=92' },
+    eraser: { name: '橡皮对决', icon: '橡', mode: '独立玩法', time: '3–8 分钟', brief: '控制力度和方向，把橡皮弹向得分区域。', external: './games/eraser-duel.html?v=92' }
   };
   const keys = Object.keys(info);
   let scores;
@@ -272,5 +272,6 @@
   function render(key = active) { active = key; write('takagi-arcade-last-game', key); shelf.dataset.activeGame = key; tabs.querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.game === key))); renders[key](); stage.animate?.([{ opacity:.55, transform:'translateY(5px)' }, { opacity:1, transform:'translateY(0)' }], { duration:180, easing:'ease-out' }) }
   keys.forEach(key => { const item = info[key], tab = button('', () => render(key), 'arcade-tab-card'); tab.dataset.game = key; tab.setAttribute('aria-pressed', String(key === active)); tab.append(make('b', item.icon), make('span', item.name), make('small', item.mode)); tabs.append(tab) });
   shelf.addEventListener('toggle', () => { summary.querySelector('em').textContent = shelf.open ? '收起' : '展开'; if (shelf.open && !stage.childElementCount) render() });
+  globalThis.TakagiArcade=Object.freeze({open:(key)=>{if(key&&!['mind','eraser'].includes(key))throw Error('不支持的游戏入口');if(key)openStandalone(key);else{shelf.open=true;if(!stage.childElementCount)render();shelf.scrollIntoView({behavior:'smooth',block:'start'});summary.focus()}}});
   paintScore();
 })();

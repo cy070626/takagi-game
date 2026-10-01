@@ -55,3 +55,47 @@
     setTimeout(() => composer?.scrollIntoView({ block: 'end', behavior: 'smooth' }), 180);
   });
 })();
+
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  function assist(selector, vertical, label) {
+    const area = document.querySelector(selector);
+    if (!area) return;
+    const controls = document.createElement('div');
+    controls.className = 'scroll-assist' + (selector === '#scene-rail' ? ' scene-scroll-assist' : '');
+    controls.hidden = true;
+    const back = document.createElement('button');
+    const next = document.createElement('button');
+    const hint = document.createElement('span');
+    hint.textContent = label;
+    [back, next].forEach((button, i) => {
+      button.type = 'button';
+      button.textContent = vertical ? (i ? '↓' : '↑') : (i ? '→' : '←');
+      button.setAttribute('aria-label', vertical ? (i ? '向下翻阅聊天' : '向上翻阅聊天') : (i ? '向右查看更多' : '向左查看更多'));
+      button.addEventListener('click', () => area.scrollBy({
+        [vertical ? 'top' : 'left']: (i ? 1 : -1) * (vertical ? area.clientHeight : area.clientWidth) * .75,
+        behavior: reduced.matches ? 'auto' : 'smooth'
+      }));
+    });
+    controls.append(back, hint, next);
+    area.after(controls);
+    let pending = false;
+    function update() {
+      pending = false;
+      const max = vertical ? area.scrollHeight - area.clientHeight : area.scrollWidth - area.clientWidth;
+      const position = vertical ? area.scrollTop : area.scrollLeft;
+      controls.hidden = max <= 3;
+      back.disabled = position <= 2;
+      next.disabled = position >= max - 2;
+    }
+    function schedule() { if (!pending) { pending = true; requestAnimationFrame(update); } }
+    area.addEventListener('scroll', schedule, {passive:true});
+    new ResizeObserver(schedule).observe(area);
+    new MutationObserver(schedule).observe(area, {childList:true,subtree:true,characterData:true});
+    update();
+  }
+  assist('.scene-picker', false, '左右滑动选择情境');
+  assist('#suggestions', false, '左右滑动查看更多回应');
+
+  assist('#scene-rail', false, '左右滑动切换场景');
+})();

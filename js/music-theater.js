@@ -75,12 +75,47 @@
     window.parent?.postMessage({ type:'takagi-music-theater', action, sceneId:scene.id, sceneTitle:scene.title, thumb:scene.thumb, trackTitle:item.title, artist:item.artist }, location.origin);
   }
 
+  let embedTimer = 0, embedHintTimer = 0;
+  function cancelEmbedPending() { clearTimeout(embedTimer); clearTimeout(embedHintTimer); }
+
   function renderTrack() {
     const scene = scenes[sceneIndex], item = scene.tracks[trackIndex];
     $('#track-title').textContent = item.title; $('#peek-title').textContent = item.title; $('#track-artist').textContent = item.artist;
-    const frame = $('#player-frame'); frame.replaceChildren();
+    const frame = $('#player-frame');
+    const desiredUrl = item.spotifyPath ? spotifyUrl(item, true) : '';
+    const existing = frame.querySelector('iframe');
+    const unchanged = Boolean(existing && existing.getAttribute('src') === desiredUrl);
+    cancelEmbedPending();
+    if (!unchanged) frame.replaceChildren();
     if (item.spotifyPath) {
-      const iframe = document.createElement('iframe'); iframe.title = `Spotify 播放器：${item.title}`; iframe.src = spotifyUrl(item, true); iframe.loading = 'eager'; iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture'; iframe.setAttribute('allowfullscreen',''); frame.append(iframe);
+      if (!unchanged) {
+        const status = document.createElement('div'); status.className = 'embed-status'; status.setAttribute('role', 'status');
+        const message = document.createElement('span'); message.textContent = '正在连接 Spotify，可先查看下方歌单。';
+        const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '重试播放器'; retry.hidden = true;
+        status.append(message, retry); frame.append(status);
+        const connect = () => {
+          cancelEmbedPending();
+          frame.querySelector('iframe')?.remove();
+          message.textContent = '正在连接 Spotify，可先查看下方歌单。'; retry.hidden = true;
+          // Combine rapid selections before starting a third-party request.
+          embedTimer = setTimeout(() => {
+            const iframe = document.createElement('iframe'); iframe.title = `Spotify 播放器：${item.title}`;
+            iframe.loading = 'eager'; iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture'; iframe.setAttribute('allowfullscreen','');
+            iframe.addEventListener('load', () => {
+              if (!frame.contains(iframe)) return;
+              clearTimeout(embedHintTimer);
+              message.textContent = '播放器空白？可重试或在 Spotify 打开。'; retry.hidden = false;
+            }, {once:true});
+            iframe.src = desiredUrl; frame.prepend(iframe);
+            embedHintTimer = setTimeout(() => {
+              if (!frame.contains(iframe)) return;
+              message.textContent = '加载较慢，可重试或导入本地音乐。'; retry.hidden = false;
+            }, 8000);
+          }, 180);
+        };
+        retry.onclick = connect;
+        connect();
+      }
       $('#player-note').textContent = 'Spotify 音量请在播放器或设备中调节。本地音乐不会上传。';
     } else {
       const note = document.createElement('div'); note.className = 'spotify-search'; note.textContent = 'Spotify 暂未提供可确认的嵌入地址。可以使用下方按钮搜索这首歌。'; frame.append(note);
@@ -96,9 +131,18 @@
     scenes[sceneIndex].tracks.forEach((item, index) => {
       const button = document.createElement('button'); button.type = 'button'; button.setAttribute('aria-pressed', String(index === trackIndex));
       const title = document.createElement('b'), artist = document.createElement('small'); title.textContent = item.title; artist.textContent = item.artist; button.append(title, artist);
-      button.onclick = () => { trackIndex = index; $('#local-player').pause(); $('#local-player').hidden = true; renderTrack(); };
+      button.onclick = () => { if (index === trackIndex && $('#player-frame').querySelector('iframe')) return; trackIndex = index; $('#local-player').pause(); $('#local-player').hidden = true; renderTrack(); };
       list.append(button);
     });
+  }
+
+  function sceneEffect() {
+    TakagiSubtleEffects.clear(theater);
+    const kind = {'sakura-path':'petal','starry-night':'star','summer-festival':'firework'}[scenes[sceneIndex].id];
+    const toggle = $('#effects-toggle');
+    toggle.hidden = !kind;
+    toggle.setAttribute('aria-label', kind ? '当前场景特效：点击切换完整、减少、关闭' : '当前场景未配置特效');
+    if (kind) TakagiSubtleEffects.trigger(theater,kind,'music');
   }
 
   function renderScene(first = false) {
@@ -112,7 +156,7 @@
       transitionTimer = window.setTimeout(() => { current.style.backgroundImage = next.style.backgroundImage; next.style.opacity = '0'; }, 820);
     }
     $('#scene-rail').querySelectorAll('button').forEach((button, index) => button.setAttribute('aria-pressed', String(index === sceneIndex)));
-    trackIndex = 0; renderTrackList(); renderTrack();
+    trackIndex = 0; renderTrackList(); renderTrack(); sceneEffect();
   }
 
   function makeRail() {
@@ -181,8 +225,9 @@
   $('#collapse-player').onclick = () => { $('#player-panel').hidden = true; $('#player-peek').hidden = false; };
   $('#player-peek').onclick = () => { $('#player-panel').hidden = false; $('#player-peek').hidden = true; };
   $('#fit-toggle').onclick = event => { const complete = theater.dataset.fit === 'complete'; theater.dataset.fit = complete ? 'immersive' : 'complete'; event.currentTarget.textContent = `画面：${complete ? '沉浸' : '完整'}`; localStorage.setItem('takagi-music-fit', theater.dataset.fit); };
-  $('#minimize').onclick = () => notify('minimize');
+  $('#minimize').onclick = () => { TakagiSubtleEffects.clear(theater); notify('minimize'); };
   function openSupplement() {
+    cancelEmbedPending();
     $('#local-player').pause();
     $('#player-frame').replaceChildren();
     $('#supplement-dialog').showModal();
@@ -196,19 +241,66 @@
   $('#supplement-close').onclick = closeSupplement;
   $('#supplement-dialog').addEventListener('click', event => { if (event.target === $('#supplement-dialog')) closeSupplement(); });
   $('#supplement-dialog').addEventListener('cancel', event => { event.preventDefault(); closeSupplement(); });
-  $('#stop-close').onclick = () => { $('#local-player').pause(); $('#player-frame').replaceChildren(); notify('stop-close'); };
+  $('#stop-close').onclick = () => { cancelEmbedPending(); $('#local-player').pause(); $('#player-frame').replaceChildren(); notify('stop-close'); };
   $('#import-local').onclick = () => $('#local-file').click();
   $('#local-file').onchange = event => {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
     const extension = file.name.split('.').pop()?.toLowerCase();
     if ((!file.type.startsWith('audio/') && !['mp3','m4a','ogg','wav'].includes(extension)) || file.size > 200 * 1024 * 1024) { $('#player-note').textContent = '请选择不超过 200 MB 的 MP3、M4A、OGG 或 WAV 文件。'; return; }
     if (localUrl) URL.revokeObjectURL(localUrl); localUrl = URL.createObjectURL(file);
+    cancelEmbedPending(); $('#player-frame').replaceChildren();
     const audio = $('#local-player'); audio.src = localUrl; audio.hidden = false; audio.play().catch(() => {});
     $('#track-title').textContent = file.name; $('#track-artist').textContent = '本地音乐'; $('#peek-title').textContent = file.name; $('#player-note').textContent = '本地文件只在当前页面播放，不会上传。';
   };
 
   theater.dataset.fit = localStorage.getItem('takagi-music-fit') || 'complete';
   $('#fit-toggle').textContent = `画面：${theater.dataset.fit === 'complete' ? '完整' : '沉浸'}`;
+  TakagiSubtleEffects.bindToggle($('#effects-toggle'),'music',sceneEffect);
+  window.addEventListener('message',event=>{if(event.origin===location.origin && event.source===window.parent && event.data?.type==='takagi-music-visibility' && !event.data.visible)TakagiSubtleEffects.clear(theater);});
   makeRail(); setupSupplement(); renderScene(true); notify('ready');
-  window.addEventListener('pagehide', () => { if (localUrl) URL.revokeObjectURL(localUrl); });
+  window.addEventListener('pagehide', () => { cancelEmbedPending(); if (localUrl) URL.revokeObjectURL(localUrl); });
+})();
+
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  function assist(selector, vertical, label) {
+    const area = document.querySelector(selector);
+    if (!area) return;
+    const controls = document.createElement('div');
+    controls.className = 'scroll-assist' + (selector === '#scene-rail' ? ' scene-scroll-assist' : '');
+    controls.hidden = true;
+    const back = document.createElement('button');
+    const next = document.createElement('button');
+    const hint = document.createElement('span');
+    hint.textContent = label;
+    [back, next].forEach((button, i) => {
+      button.type = 'button';
+      button.textContent = vertical ? (i ? '↓' : '↑') : (i ? '→' : '←');
+      button.setAttribute('aria-label', vertical ? (i ? '向下翻阅聊天' : '向上翻阅聊天') : (i ? '向右查看更多' : '向左查看更多'));
+      button.addEventListener('click', () => area.scrollBy({
+        [vertical ? 'top' : 'left']: (i ? 1 : -1) * (vertical ? area.clientHeight : area.clientWidth) * .75,
+        behavior: reduced.matches ? 'auto' : 'smooth'
+      }));
+    });
+    controls.append(back, hint, next);
+    area.after(controls);
+    let pending = false;
+    function update() {
+      pending = false;
+      const max = vertical ? area.scrollHeight - area.clientHeight : area.scrollWidth - area.clientWidth;
+      const position = vertical ? area.scrollTop : area.scrollLeft;
+      controls.hidden = max <= 3;
+      back.disabled = position <= 2;
+      next.disabled = position >= max - 2;
+    }
+    function schedule() { if (!pending) { pending = true; requestAnimationFrame(update); } }
+    area.addEventListener('scroll', schedule, {passive:true});
+    new ResizeObserver(schedule).observe(area);
+    new MutationObserver(schedule).observe(area, {childList:true,subtree:true,characterData:true});
+    update();
+  }
+  assist('.scene-picker', false, '左右滑动选择情境');
+  assist('#suggestions', false, '左右滑动查看更多回应');
+
+  assist('#scene-rail', false, '左右滑动切换场景');
 })();

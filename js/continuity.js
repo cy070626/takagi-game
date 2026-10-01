@@ -20,6 +20,7 @@
   if(/我叫什么|记得我的名字/.test(s)){engine.begin(s);return engine.finish(engine.name?'记得，你叫'+engine.name+'。':'你还没告诉我名字，希望我怎么称呼你？','warm','name',['叫我小林','换个话题'])}
   if(/你理解错了|没理解|答非所问|说的不是/.test(s)){current=null;stage=0;engine.awaiting='';return result('刚才接偏了。你可以重新说出要聊的对象，我从这句话重新接，不沿用刚才的判断。',['重新说一下','换个话题'],'quiet')}
   if(mode==='study'||/^(我叫|叫我|你可以叫我)|我叫什么|记得我的名字|我.*喜欢|我(?:今天|明天|周末)?(?:要|准备)|别.*(逗|捉弄)|认真听|不想聊|安静一下|晚安|再见/.test(s))return engine.reply(s,scene,mode);
+  if(activeTerm&&globalThis.TakagiTopicTree.has(activeTerm)){const reply=knowledge(s);if(reply)return reply}
   if(engine.awaiting&&!current){const follow=engine.followUp(s);if(follow){engine.begin(s);return follow}}
   if(/换.*话题|重新开始/.test(s)){current=null;stage=0;return result('好，换一页。你想聊一首歌、一顿饭，还是今天的一件小事？',['聊音乐','聊午餐','聊工作'],'warm')}
   if(/刚才.*(说|聊)|记得.*聊/.test(s)&&current)return result('刚才在聊“'+current.title+'”。'+(lastDetail?'你提到：“'+lastDetail+'”。':'')+'要从那里接着说吗？',['继续刚才的话题','补一个细节','换个话题']);

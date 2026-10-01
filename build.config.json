@@ -1,0 +1,71 @@
+{
+  "release": 92,
+  "javascript": {
+    "js/experience.js": [
+      "js/main/catalog.js",
+      "js/main/session-state.js",
+      "js/main/chat-view.js",
+      "js/main/scene-actions.js",
+      "js/main/composer-state.js",
+      "js/main/image-input.js",
+      "js/main/voice-input.js",
+      "js/main/chat-request.js",
+      "js/main/topic-conversation.js",
+      "js/main/companion-actions.js",
+      "js/main/chat-submit.js",
+      "js/main/glossary-dialog.js",
+      "js/main/profile-dialog.js",
+      "js/main/site-dialogs.js",
+      "js/main/bootstrap.js"
+    ],
+    "js/extras.js": [
+      "js/features/gallery.js",
+      "js/features/feature-loader.js"
+    ],
+    "js/games-bundle.js": [
+      "js/puzzles.js",
+      "js/puzzles-extra.js",
+      "js/leisure.js",
+      "js/arcade-v2.js"
+    ],
+    "js/sidebar-bundle.js": [
+      "js/omikuji.js",
+      "js/memories.js"
+    ],
+    "js/dialogue-runtime.js": [
+      "js/subtle-effects.js",
+      "js/dialogue-v2.js",
+      "js/topic-tree.js",
+      "js/chat-hub.js",
+      "js/chat-hub-ui.js"
+    ],
+    "js/music-theater-runtime.js": [
+      "js/subtle-effects.js",
+      "js/music-theater.js"
+    ]
+  },
+  "css": {
+    "css/styles.css": [
+      "css/source/components/base.css",
+      "css/source/components/scene-and-catalog.css",
+      "css/source/components/chat-and-scenes.css",
+      "css/source/components/gallery-and-games.css",
+      "css/source/components/chat-input.css",
+      "css/source/components/omikuji.css",
+      "css/source/components/memories.css",
+      "css/source/components/interaction-and-music.css",
+      "css/source/components/gallery-and-profile.css",
+      "css/source/components/poetry.css",
+      "css/source/components/access-input.css"
+    ],
+    "css/responsive.css": [
+      "css/source/responsive/layout.css",
+      "css/source/responsive/navigation-tablet.css",
+      "css/source/responsive/mobile.css",
+      "css/source/responsive/small-landscape-motion.css",
+      "css/source/responsive/feature-controls.css",
+      "css/source/responsive/chat-layout.css",
+      "css/source/responsive/scroll-controls.css"
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+/* V88: compact mobile entry and explicit scroll affordances */
+.chat,
+.workspace > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.scroll-assist {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
+  color: #5e7359;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.scroll-assist[hidden] {
+  display: none !important;
+}
+.scroll-assist button {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  border: 1px solid #cbd8c4;
+  border-radius: 12px;
+  background: #f3f7ee;
+  color: #3c5d3e;
+  font-size: 22px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.scroll-assist button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.scroll-assist button:focus-visible {
+  outline: 2px solid #486b45;
+  outline-offset: 2px;
+}
+.scroll-assist span {
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .music-entry-hint {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+  }
+  .music-entry-actions {
+    gap: 10px;
+    align-items: stretch;
+  }
+  .music-theater-entry {
+    height: auto;
+    min-height: 0;
+    align-content: start;
+  }
+  .music-entry-scene {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

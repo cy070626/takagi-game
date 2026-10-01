@@ -1,5 +1,5 @@
 # 素材 SHA-256，共 134 个文件
-# V76 沿用已压缩素材与静态 GIF 封面，图片文件未改动。
+# V80 沿用已压缩素材与静态 GIF 封面，图片文件未改动。
 
 5885d01ca5866b2ad3bab826de39cba766be23b3e1f33b88985b4ebff2439e27  assets/cafeteria.webp
 4e3085b8a19b674cc6bf613293b14eb143f385feea5fc490a4391e6909aba92a  assets/evening-study.webp
