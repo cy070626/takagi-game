@@ -77,9 +77,10 @@ async function requestAI(message, image) {
   }
   const topicContext = plannedTopic;
   const referred =
+    !/换个话题|换一个话题|不聊.{0,12}了|先不说.{0,12}了/.test(message) &&
     recentChatImage &&
     Date.now() - recentChatImage.at < 5 * 60000 &&
-    /这张|那张|图中|图片|上图|刚才的图|这道题|图里|第[一二三四五六七八九十0-9]+题/.test(
+    /这张|那张|图中|图片|上图|刚才的图|这道题|这题|刚才那道|图里|第[一二三四五六七八九十0-9]+(?:题|步)/.test(
       message,
     )
       ? recentChatImage
@@ -151,6 +152,7 @@ async function requestAI(message, image) {
     if (!profile.modelPreference.startsWith("qwen-"))
       globalThis.TakagiEngineSession?.accept(profile.modelPreference, data);
     return {
+      interactive: data.interactive || null,
       visualCue: typeof data.visualCue === "string" ? data.visualCue : "",
       engine: data.engine || "",
       requestId: data.requestId || "",

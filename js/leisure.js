@@ -126,7 +126,7 @@
   function showTheater(){
     if(!theaterModal){
       theaterModal=document.createElement('dialog');theaterModal.className='music-theater-modal';theaterModal.setAttribute('aria-label','音乐小剧场');
-      theaterFrame=document.createElement('iframe');theaterFrame.src='./pages/music-theater.html?v=92';theaterFrame.title='高木同学音乐小剧场';theaterFrame.loading='eager';theaterFrame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';theaterFrame.setAttribute('allowfullscreen','');
+      theaterFrame=document.createElement('iframe');theaterFrame.src='./pages/music-theater.html?v=98';theaterFrame.title='高木同学音乐小剧场';theaterFrame.loading='eager';theaterFrame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';theaterFrame.setAttribute('allowfullscreen','');
       theaterModal.append(theaterFrame);document.body.append(theaterModal);
       theaterModal.addEventListener('cancel',event=>{event.preventDefault();closeTheater(false)});
     }

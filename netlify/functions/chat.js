@@ -1,4 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
+import { decodeModelReply } from "./reply-parser.js";
+import { interactiveRequested, readableReplyRules, interactiveReplyRules } from "./reply-format.js";
 
 const DEFAULT_ENGINE = "qwen-flash";
 const ENGINE_CONFIG = Object.freeze({
@@ -178,22 +180,22 @@ function passwordMatches(input, expected) {
   return supplied.length === configured.length && timingSafeEqual(supplied, configured);
 }
 
-function parseModelReply(content) {
-  const raw = cleanText(content, 8_000);
-  const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-  let parsed;
+function parseModelReply(content, allowInteractive = false) {
+  const raw = cleanText(content, allowInteractive ? 18_000 : 8_000);
+  const parsed = decodeModelReply(raw);
 
-  try {
-    parsed = JSON.parse(unfenced);
-  } catch {
-    parsed = { text: raw };
-  }
-
-  const text = cleanText(parsed?.text, 1_800);
+  let text = cleanText(parsed?.text, 1_800);
+  const candidate = parsed?.interactive;
+  const interactive = allowInteractive && typeof candidate?.html === "string" && candidate.html.trim() && candidate.html.length <= 6000
+    ? { title: cleanText(candidate.title, 60) || "互动页面", html: candidate.html.trim() }
+    : null;
+  if (interactive && !text) text = "给你做了一个小页面，展开就能试。";
+  if (allowInteractive && !interactive && text) text += " 这一轮页面没有生成完整，可以让我缩小成一个按钮或一道练习再试。";
   if (!text) throw new Error("EMPTY_MODEL_REPLY");
 
   return {
     text,
+    ...(interactive ? { interactive } : {}),
     visualCue: ['classroom','morning','rain','seaside','stars','festival','library','sakura','winter'].includes(parsed?.visualCue) ? parsed.visualCue : '',
     mood: ALLOWED_MOODS.has(parsed?.mood) ? parsed.mood : "warm",
     topic: cleanText(parsed?.topic, 80),
@@ -737,6 +739,7 @@ async function handleChat(request) {
   let engines = engineSequence(body?.modelPreference, body?.allowFallback);
   if (image && body?.allowFallback === false && engines[0].id === "deepseek-pro") return json(400, {error: "DeepSeek Pro 当前只支持文本，请使用千问或 DeepSeek Flash 识图",code:"VISION_UNSUPPORTED",engine:"deepseek-pro",engineName:"DeepSeek Pro"});
   if (image) engines = engines.filter(engine => engine.id !== "deepseek-pro").map(engine => engine.id === "deepseek-flash" ? {...engine, model: "deepseek-flash"} : engine);
+  const allowInteractive = interactiveRequested(message);
   const managed = body?.clientManagedRetries === true && body?.allowFallback === false;
   const failures = [];
   const blockedProviders = new Set();
@@ -752,12 +755,12 @@ async function handleChat(request) {
     const requestBody = {
       model: engine.model,
       messages: [
-        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext, visitContext, conversationContext, searchEnabled }) + (image ? "\n图片回应要求：本轮图片是实际视觉输入。先读取画面、文字或题目，再直接回应玩家的问题。辨认不清时指出具体看不清的部分，不能谎称没有收到图片，也不能只说泛泛的陪伴话。不要根据校园场景臆造图片内容。" : "") },
+        { role: "system", content: buildSystemPrompt({ mode, scene, profile, topicContext, visitContext, conversationContext, searchEnabled }) + readableReplyRules + (allowInteractive ? interactiveReplyRules : "") + (image ? "\n图片回应要求：本轮图片是实际视觉输入。先读取画面、文字或题目，再直接回应玩家的问题。辨认不清时指出具体看不清的部分，不能谎称没有收到图片，也不能只说泛泛的陪伴话。不要根据校园场景臆造图片内容。" : "") },
         ...history,
         { role: "user", content: userContent },
       ],
       temperature: resolveTemperature(profile, mode),
-      max_tokens: image ? 900 : mode === "study" ? 460 : 360,
+      max_tokens: allowInteractive ? 1800 : image ? 900 : mode === "study" ? 460 : 360,
       stream: false,
     };
     if (searchEnabled) {
@@ -780,7 +783,7 @@ async function handleChat(request) {
     }
 
     try {
-      const reply = parseModelReply(outcome.content);
+      const reply = parseModelReply(outcome.content, allowInteractive);
       return json(200, {
         ...humanizeReply(reply, { message, profile }),
         engine: engine.id,

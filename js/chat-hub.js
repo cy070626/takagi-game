@@ -11,10 +11,11 @@
   sakura:{src:'./assets/music-scenes/sakura-path-thumb.webp',label:'樱花小路',detail:'花瓣在路边停了一会儿，可以慢慢走。'},
   winter:{src:'./assets/music-scenes/winter-window-thumb.webp',label:'冬日窗边',detail:'窗外的雪很轻，屋里还有一处暖和的位置。'}
  });
- const destinations={music:{label:'音乐小剧场',href:'./pages/music-theater.html'},games:{label:'小游戏',href:null},mind:{label:'猜心对决',href:'./games/mind-duel.html?v=92'},eraser:{label:'橡皮对决',href:'./games/eraser-duel.html?v=92'},poetry:{label:'诗集分享',href:null}};
+ const destinations={music:{label:'音乐小剧场',href:'./pages/music-theater.html'},games:{label:'小游戏',href:null},mind:{label:'猜心对决',href:'./games/mind-duel.html?v=98'},eraser:{label:'橡皮对决',href:'./games/eraser-duel.html?v=98'},poetry:{label:'诗集分享',href:null}};
  function intent(value){const text=String(value||'').trim();if(!text||/不要|不想|不去|别打开|不用打开|别带我|以后再|下次再|能不能不/.test(text))return null;
   const ask=/打开|带我|我们去|一起去|我想去|想进入|我要去|去听|想听|听点|听会|去玩|想玩|来一局|玩一局|做个|做一个|做点|我想做|我想写|看一看|看看|给我看|找.*图/;
   if(!ask.test(text))return null;
+  if(globalThis.TakagiInteractiveCard?.requested(text))return null;
   if(/音乐小剧场|小剧场|听点音乐|听会音乐|听音乐/.test(text))return{type:'music',...destinations.music};
   if(/猜心/.test(text))return{type:'mind',...destinations.mind};
   if(/橡皮.*对决|橡皮小游戏|玩.*橡皮/.test(text))return{type:'eraser',...destinations.eraser};

@@ -1,12 +1,12 @@
 const continuityScript = document.createElement("script");
-continuityScript.src = "./js/continuity.js?v=92";
+continuityScript.src = "./js/continuity.js?v=98";
 document.body.append(continuityScript);
 let extrasPromise = null;
 const loadExtras = () =>
   extrasPromise ||
   (extrasPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "./js/extras.js?v=92";
+    script.src = "./js/extras.js?v=98";
     script.onload = resolve;
     script.onerror = () => {
       script.remove();

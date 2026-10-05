@@ -1,6 +1,7 @@
+let imagePreparing = false, imagePreparationId = 0;
 function syncComposer() {
-  send.disabled = busy || (!input.value.trim() && !pendingImage);
-  attachButton.disabled = busy;
+  send.disabled = busy || imagePreparing || (!input.value.trim() && !pendingImage);
+  attachButton.disabled = busy || imagePreparing;
   voiceButton.disabled =
     busy ||
     voiceButton.dataset.supported === "false" ||
@@ -61,10 +62,13 @@ async function prepareImage(file) {
       "请选择不超过 8 MB 的 JPG、PNG、WebP 或 GIF 图片。";
     return;
   }
-  attachButton.disabled = true;
+  const preparationId = ++imagePreparationId;
+  imagePreparing = true;
+  syncComposer();
   $("#ai-status").textContent = "正在压缩图片…";
   try {
     const image = await loadLocalImage(file);
+    if (preparationId !== imagePreparationId) return;
     let dataUrl = "";
     for (const [maxSize, quality] of [
       [1280, 0.82],
@@ -94,7 +98,10 @@ async function prepareImage(file) {
     $("#ai-status").textContent = "这张图片暂时无法读取，请换一张再试。";
     clearPendingImage();
   } finally {
-    attachButton.disabled = busy;
+    if (preparationId === imagePreparationId) {
+      imagePreparing = false;
+      syncComposer();
+    }
   }
 }
 attachButton.onclick = () => imagePicker.click();
@@ -119,6 +126,7 @@ chatForm.addEventListener("drop", (event) => {
     item.type.startsWith("image/"),
   );
   if (file) prepareImage(file);
+  else if (event.dataTransfer?.files?.length) $("#ai-status").textContent = "聊天附件目前支持图片；PDF、Word 等文档请截图后上传。";
 });
 input.addEventListener("paste", (event) => {
   const file = Array.from(event.clipboardData?.files || []).find((item) =>

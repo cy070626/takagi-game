@@ -275,3 +275,14 @@
     min-height: 34px;
   }
 }
+
+/* Math stays inside the bubble; wide formulas scroll horizontally. */
+.message p { min-width: 0; }
+.message .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: .4em 0; margin: .5em 0; white-space: normal; }
+.message .katex { font-size: 1.08em; overflow-wrap: normal; white-space: nowrap; }
+
+.reply-code{display:block;max-width:100%;overflow:auto;padding:10px;background:#ffffff85;border-radius:8px;white-space:pre;font:13px/1.6 monospace}
+.reply-heading{display:block;margin:6px 0}.message code:not(.reply-code){font-size:.9em;background:#ffffff70;border-radius:4px;padding:1px 3px}
+.reply-table-scroll{display:block;max-width:100%;overflow-x:auto;margin:8px 0;white-space:normal}.reply-table{display:table;border-collapse:collapse;min-width:100%}.reply-table-row{display:table-row}.reply-table-row>[role]{display:table-cell;border:1px solid #b7c5ae;padding:6px 9px;min-width:90px;vertical-align:top}.reply-table-row>[role=columnheader]{font-weight:600;background:#dee8d4}
+.interactive-card{display:grid;gap:8px;margin-top:10px;padding:12px;border:1px solid #cbd8c4;border-radius:12px;background:#fafcf6;min-width:0}.interactive-card>small{font-size:12px;color:#627558}.interactive-card-actions{display:flex;gap:8px;flex-wrap:wrap}.interactive-card-actions button{min-height:44px;padding:8px 12px;border:1px solid #becfb2;border-radius:10px;background:white;color:#435b40;cursor:pointer}.interactive-card-body{min-width:0}.interactive-card-body[hidden]{display:none}.interactive-card iframe{display:block;width:100%;height:min(480px,65dvh);min-height:260px;border:0;border-radius:8px;background:#fcfdf8}
+@media(max-width:700px){.interactive-card{padding:8px}.interactive-card iframe{height:min(440px,62dvh)}}

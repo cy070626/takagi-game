@@ -22,7 +22,7 @@ test("HTML、CSS 与 JavaScript 中的相对资源路径均存在", () => {
     const references = [...text.matchAll(/["'`](\.\.?\/[^"'`?#]+)(?:[?#][^"'`]*)?["'`]/g)].map((match) => match[1]);
     for (const reference of references) {
       if (reference.includes("${") || reference.startsWith("../.netlify")) continue;
-      const browserBase = /music-theater(?:-runtime)?\.js$/.test(source)
+      const browserBase = source.endsWith(".html") && /<base href="\.\.\/">/.test(text) ? root : source.includes("netlify") ? dirname(source) : /music-theater(?:-runtime)?\.js$/.test(source)
         ? join(root, "pages")
         : source.endsWith(".js")
           ? root
@@ -82,7 +82,7 @@ test("首屏场景与猜心对决使用轻量资源", () => {
 
   assert.ok(Buffer.byteLength(experience) < 100_000, "experience.js 应小于 100KB");
   assert.ok(Buffer.byteLength(mind) < 100_000, "mind-duel.html 应小于 100KB");
-  assert.match(index, /assets\/takagi\.webp/);
+  assert.match(index, /assets\/user-gallery-202609\/b1-01\.webp/);
   assert.match(index, /assets\/takagi-avatar\.webp/);
   assert.doesNotMatch(index, /assets\/takagi\.png/);
   assert.doesNotMatch(experience, /Object\.values\(scenes\).*new Image/);

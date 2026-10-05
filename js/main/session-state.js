@@ -1,4 +1,4 @@
-let activeScene = "classroom",
+let activeScene = "festival",
   activeTerm = null,
   localTopicTurns = 0,
   aiMode = "chat",

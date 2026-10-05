@@ -54,7 +54,7 @@
  new MutationObserver(()=>{if(!sceneEl.classList.contains('alive')||sceneEl.dataset.motionStyle==='still')reset()}).observe(sceneEl,{attributes:true,attributeFilter:['class','data-motion-style']});
  const toolbar=textEl('div','','conversation-tools');
  const speed=textEl('button','');speed.type='button';const paintSpeed=()=>speed.textContent=load('takagi-text-speed')==='instant'?'文字：即时':'文字：轻快';paintSpeed();speed.onclick=()=>{save('takagi-text-speed',load('takagi-text-speed')==='instant'?'quick':'instant');paintSpeed()};
- const recap=textEl('button','回看对话');recap.type='button';recap.onclick=()=>{const body=textEl('div','','conversation-history');log.querySelectorAll('.message').forEach(row=>{body.append(textEl('strong',row.classList.contains('assistant')?'高木':'你'),textEl('p',row.querySelector('p')?.textContent||''))});openDialog('这次见面的对话',body)};
+ const recap=textEl('button','回看对话');recap.type='button';recap.onclick=()=>{const body=textEl('div','','conversation-history');log.querySelectorAll('.message').forEach(row=>{body.append(textEl('strong',row.classList.contains('assistant')?'高木':'你'),textEl('p',row.querySelector('p')?.dataset.rawText||row.querySelector('p')?.textContent||''))});openDialog('这次见面的对话',body);body.querySelectorAll('p').forEach(p=>void TakagiReplyDisplay.render(p))};
  const latest=textEl('button','回到最新');latest.type='button';latest.onclick=()=>{log.scrollTo({top:log.scrollHeight,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})};
  toolbar.append(speed,recap,latest);document.querySelector('.composer').prepend(toolbar);
  const trail=textEl('p','从今天的小事聊起，也可以接着刚才说。','conversation-trail');toolbar.after(trail);

@@ -75,7 +75,7 @@ const initial =
     ? profile.startScene
     : savedScene && scenes[savedScene]
       ? savedScene
-      : "classroom";
+      : "festival";
 log.replaceChildren();
 setScene(initial);
 function pulseReaction(kind = "warm") {
@@ -90,8 +90,7 @@ function pulseReaction(kind = "warm") {
   spark._timer = setTimeout(() => (spark.dataset.show = "false"), 850);
 }
 function speak(text, kind = "warm") {
-  const line = text.match(/^.*?[。？！]/)?.[0] || text;
-  $("#bubble").textContent = line.length > 58 ? line.slice(0, 58) + "…" : line;
+  $("#bubble").textContent = TakagiReplyDisplay.summary(text);
   sceneEl.dataset.mood = kind === "scene" ? "warm" : kind;
   sceneEl.classList.remove("bubble-pop");
   void sceneEl.offsetWidth;

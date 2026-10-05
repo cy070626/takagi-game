@@ -14,13 +14,13 @@ let gamesPromise = null,
   sidebarReady = false;
 const loadGames = () =>
   gamesPromise ||
-  (gamesPromise = loadScript("./js/games-bundle.js?v=92").catch((error) => {
+  (gamesPromise = loadScript("./js/games-bundle.js?v=98").catch((error) => {
     gamesPromise = null;
     throw error;
   }));
 const loadSidebar = () =>
   sidebarPromise ||
-  (sidebarPromise = loadScript("./js/sidebar-bundle.js?v=92")
+  (sidebarPromise = loadScript("./js/sidebar-bundle.js?v=98")
     .then(() => {
       sidebarReady = true;
     })

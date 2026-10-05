@@ -22,6 +22,7 @@ function add(role, text, mood = "warm") {
   p.textContent = text;
   d.append(p);
   log.append(d);
+  void TakagiReplyDisplay.render(p);
   log.scrollTop = log.scrollHeight;
   if (role === "user" || role === "assistant")
     TakagiSubtleEffects.trigger(log, TakagiSubtleEffects.detect(text));

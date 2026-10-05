@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><base href="../"><meta name="viewport" content="width=device-width,initial-scale=1"><title>可读回复与互动页面预览</title><link rel="stylesheet" href="./css/styles.css?v=98"><style>body{max-width:860px;margin:auto;padding:24px}.message{max-width:100%}h1{font-size:26px}p{line-height:1.8}</style></head><body><h1>可读回复与互动页面</h1><p>此页检查展示组件，不调用 AI。展开后试试滑块、按钮与重新开始。</p><div id="preview"></div><script src="./js/reply-display.js?v=98"></script><script>
+const example=String.raw`结果是六份中的五份，也就是 \(\frac{5}{6}\)。
+**一起算一下：**
+\[\frac{1}{2}+\frac{1}{3}=\frac{5}{6}\]
+| 项目 | 结果 |
+| --- | --- |
+| 二分之一 | \(\frac{3}{6}\) |
+| 三分之一 | \(\frac{2}{6}\) |
+| 合计 | 五份，共六份 |
+HTML 字符保持文字：<img src=x onerror=alert(1)>`;
+const row=document.createElement('div');row.className='message assistant';const p=document.createElement('p');p.textContent=example;row.append(p);document.querySelector('#preview').append(row);TakagiReplyDisplay.render(p);
+const html=`<style>h2{margin:0 0 12px}label{display:block}output{font-size:24px;color:#47634b;font-weight:bold}button{margin:8px 4px 0 0;padding:8px 12px;border-radius:8px;border:1px solid #b6c6aa;background:#e6eddc}.note{margin:12px 0}</style><h2>看看几份是二分之一</h2><label>一共六份，选择几份：<input id='n' type='range' min='0' max='6' value='3' oninput="document.getElementById('v').textContent=this.value+'/6';document.getElementById('hint').textContent='点按钮检查一下。'"></label><output id='v'>3/6</output><p id='hint' class='note'>拖动滑块，再检查答案。</p><button type='button' onclick="document.getElementById('hint').textContent=document.getElementById('n').value==3?'答对了。六份里的三份，就是一半。':'再想一下，一半要取几份？'">检查答案</button><button type='button' onclick="document.getElementById('n').value=3;document.getElementById('v').textContent='3/6';document.getElementById('hint').textContent='取三份，正好一半。'">给一点提示</button>`;
+TakagiInteractiveCard.attach(row,{title:'分数滑块小练习',html});
+</script></body></html>

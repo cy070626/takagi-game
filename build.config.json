@@ -1,5 +1,5 @@
 {
-  "release": 92,
+  "release": 98,
   "javascript": {
     "js/experience.js": [
       "js/main/catalog.js",
@@ -42,6 +42,11 @@
     "js/music-theater-runtime.js": [
       "js/subtle-effects.js",
       "js/music-theater.js"
+    ],
+    "js/reply-display.js": [
+      "js/main/math-display.js",
+      "js/features/reply-display.js",
+      "js/features/interactive-card.js"
     ]
   },
   "css": {

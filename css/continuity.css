@@ -12,3 +12,5 @@ button:active:not(:disabled){filter:brightness(.95)}
 .chat-scroll{overflow-anchor:auto}.message p{white-space:pre-wrap}
 @media(prefers-reduced-motion:reduce){.scene[data-depth=on]{transform:none!important}}
 @media(max-width:700px){.conversation-tools{justify-content:flex-start}.depth-note{font-size:12px}.scene[data-depth=on]{box-shadow:0 10px 24px #25352922}}
+
+.conversation-history .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:.4em 0;white-space:normal}.conversation-history .katex{overflow-wrap:normal;white-space:nowrap}

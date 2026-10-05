@@ -1,5 +1,9 @@
 async function submit(text = input.value, retryTurn = null) {
   const attachment = retryTurn?.attachment || pendingImage;
+  if (imagePreparing) {
+    $("#ai-status").textContent = "图片还在准备，请稍等后发送。";
+    return;
+  }
   if (busy || (!text.trim() && !attachment)) return;
   const siteAction = !attachment && globalThis.TakagiChatHub.intent(text);
   if (siteAction) {
@@ -214,6 +218,8 @@ async function submit(text = input.value, retryTurn = null) {
     }
   }
   complete.remove();
+  void TakagiReplyDisplay.render(p);
+  if (!failed && response.interactive) TakagiInteractiveCard.attach(row, response.interactive);
   if (!failed && response.visualCue) addSceneImage(row, response.visualCue);
   row.removeAttribute("aria-hidden");
   if (!failed) {

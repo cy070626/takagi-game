@@ -32,7 +32,7 @@ for (const [kind, outputs] of Object.entries({js:config.javascript, css:config.c
     const parts = await Promise.all(inputs.map(input => readFile(resolve(root,input),'utf8')));
     const result = await transform(parts.join('\n'), {
       loader:kind, target:'esnext', charset:'utf8',
-      minifyWhitespace:true, minifyIdentifiers:false, minifySyntax:false,
+      minifyWhitespace:true, minifyIdentifiers:false, minifySyntax:output === "js/experience.js",
       legalComments:'inline'
     });
     const header = `/* Generated from ${inputs.join(', ')}. Edit sources; run npm run build:bundles. */\n`;
